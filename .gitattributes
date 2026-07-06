@@ -1,0 +1,27 @@
+# Enforce LF line endings on files where CRLF would break the build.
+# Windows/WSL2 hosts can otherwise silently introduce CRLF and Make will fail
+# in confusing ways ("missing separator" or "command not found" on recipes).
+
+* text=auto eol=lf
+
+Makefile      text eol=lf
+*.mk          text eol=lf
+*.sh          text eol=lf
+Dockerfile    text eol=lf
+*.c           text eol=lf
+*.h           text eol=lf
+*.S           text eol=lf
+*.asm         text eol=lf
+*.ld          text eol=lf
+*.yml         text eol=lf
+*.yaml        text eol=lf
+
+# Binary types: never touch.
+*.tar.gz  binary
+*.tar.xz  binary
+*.zip     binary
+*.iso     binary
+*.img     binary
+*.bin     binary
+*.o       binary
+*.elf     binary

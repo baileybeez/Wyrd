@@ -1,0 +1,24 @@
+# 
+
+services:
+   dev:
+      build:
+         context: .
+         dockerfile: Dockerfile
+         args:
+            USER_UID: "${USER_UID:-1000}"
+            USER_GID: "${USER_GID:-1000}"
+
+      image: os-dev:latest
+
+      container_name: os-dev
+
+      volumes:
+         - .:/workspace
+
+      working_dir: /workspace
+
+      command: sleep infinity
+
+      tty: true
+      stdin_open: true

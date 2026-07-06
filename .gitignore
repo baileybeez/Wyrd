@@ -1,0 +1,17 @@
+.dev/
+.DS_Store
+.vscode/
+.idea/
+Thumbs.db
+
+# build artifacts
+build/
+
+# toolchain
+toolchain/
+
+docker-compose-override.yml
+.env
+
+# qemu testing
+logs/
