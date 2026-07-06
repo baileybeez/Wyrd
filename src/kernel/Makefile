@@ -8,8 +8,11 @@ KERNEL_BUILD   := $(BUILD_DIR)/kernel
 OBJ_DIR        := $(KERNEL_BUILD)/obj
 
 # explicit source lists
-C_SRCS   := main.c vga.c
 ASM_SRCS := entry.asm
+C_SRCS   := main.c \
+				drivers/serial/serial.c \
+				drivers/video/vga.c \
+				lib/kprintf.c 
 
 C_OBJS   := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SRCS))
 ASM_OBJS := $(patsubst %.asm,$(OBJ_DIR)/%.o,$(ASM_SRCS))
