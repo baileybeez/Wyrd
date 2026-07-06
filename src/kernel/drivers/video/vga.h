@@ -17,5 +17,5 @@ typedef struct {
    u16   color;
 } VGA;
 
-void vga_init();
+void vgaInit();
 void print(const char *s);
