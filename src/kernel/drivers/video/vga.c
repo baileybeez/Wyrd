@@ -4,11 +4,11 @@
 const u16 kVGA_DefaultClearColor = (kColor_Black << 12) | (kColor_LightGray << 8);
 VGA g_vga = {0};
 
-void _vga_scrollUp();
-void _vga_lineFeed();
-void _vga_putch(u8 cb);
+void _vgaScrollUp();
+void _vgaLineFeed();
+void _vgaPutch(u8 cb);
 
-void vga_init()
+void vgaInit()
 {
    g_vga.mem = kVideoMem;
    g_vga.row = 0;
@@ -28,28 +28,28 @@ void print(const char *s)
       switch (*s) 
       {
          case '\n': 
-            _vga_lineFeed();
+            _vgaLineFeed();
             break;
          case '\r':
             g_vga.col = 0;
             break;
          default: 
             if (g_vga.col >= kVideoWidth)
-               _vga_lineFeed();
+               _vgaLineFeed();
             
-            _vga_putch((u8)*s);
+            _vgaPutch((u8)*s);
             break;
       };
       s++;
    }
 }
 
-void _vga_putch(u8 cb)
+void _vgaPutch(u8 cb)
 {
    g_vga.mem[g_vga.row * kVideoWidth + g_vga.col++] = cb | g_vga.color;
 }
 
-void _vga_scrollUp()
+void _vgaScrollUp()
 {
    u16 *mem = g_vga.mem;
    for (u16 y = 1; y < kVideoHeight; y++) {
@@ -63,12 +63,12 @@ void _vga_scrollUp()
     }
 }
 
-void _vga_lineFeed()
+void _vgaLineFeed()
 {
    if (g_vga.row + 1 < kVideoHeight)
         g_vga.row++;
     else 
-        _vga_scrollUp();
+        _vgaScrollUp();
 
     g_vga.col = 0;
 }
