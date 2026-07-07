@@ -1,12 +1,14 @@
 #include "bee.h"
 #include "vga.h"
+#include "../../lib/kprintf.h"
+#include <stdarg.h>
 
 const u16 kVGA_DefaultClearColor = (kColor_Black << 12) | (kColor_LightGray << 8);
 VGA g_vga = {0};
 
 void _vgaScrollUp();
 void _vgaLineFeed();
-void _vgaPutch(u8 cb);
+void _vgaPutch(char cb);
 
 void vgaInit()
 {
@@ -20,6 +22,11 @@ void vgaInit()
          g_vga.mem[y * kVideoWidth + x] = ' ' | g_vga.color;
       }
    }
+}
+
+void vgaSetColor(u8 fg, u8 bg)
+{
+   g_vga.color = (bg << 12) | (fg << 8);
 }
 
 void print(const char *s)
@@ -37,16 +44,24 @@ void print(const char *s)
             if (g_vga.col >= kVideoWidth)
                _vgaLineFeed();
             
-            _vgaPutch((u8)*s);
+            _vgaPutch(*s);
             break;
       };
       s++;
    }
 }
 
-void _vgaPutch(u8 cb)
+void printf(const char* fmt, ...)
 {
-   g_vga.mem[g_vga.row * kVideoWidth + g_vga.col++] = cb | g_vga.color;
+   va_list args;
+   va_start(args, fmt);
+   kvPrintf(_vgaPutch, fmt, args);
+   va_end(args);
+}
+
+void _vgaPutch(char cb)
+{
+   g_vga.mem[g_vga.row * kVideoWidth + g_vga.col++] = (u8)cb | g_vga.color;
 }
 
 void _vgaScrollUp()
