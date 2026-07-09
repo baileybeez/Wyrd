@@ -10,7 +10,8 @@ OBJ_DIR        := $(KERNEL_BUILD)/obj
 # explicit source lists
 ASM_SRCS := entry.asm \
 				arch/i686/descriptor_tables.asm \
-				arch/i686/isr_stubs.asm
+				arch/i686/isr_stubs.asm \
+				arch/i686/irq_stubs.asm
 C_SRCS   := main.c \
 				drivers/serial/serial.c \
 				drivers/video/vga.c \
@@ -18,7 +19,11 @@ C_SRCS   := main.c \
 				lib/logger.c \
 				arch/i686/gdt.c \
 				arch/i686/idt.c \
-				arch/i686/isr.c 
+				arch/i686/isr.c \
+				arch/i686/pic.c \
+				arch/i686/pit.c \
+				arch/i686/irq.c \
+				arch/i686/ticks.c
 
 C_OBJS   := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SRCS))
 ASM_OBJS := $(patsubst %.asm,$(OBJ_DIR)/%.o,$(ASM_SRCS))
