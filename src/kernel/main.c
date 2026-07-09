@@ -4,7 +4,9 @@
 #include "./drivers/video/vga.h"
 #include "./arch/i686/gdt.h"
 #include "./arch/i686/idt.h"
-
+#include "./arch/i686/pic.h"
+#include "./arch/i686/irq.h"
+#include "./arch/i686/ticks.h"
 
 void kernelMain()
 {
@@ -17,6 +19,21 @@ void kernelMain()
    kInfo("+ GDT initialized.");
    idtInit();
    kInfo("+ IDT initialized.");
+
+   picRemap(kIrqBase, kIrqBase + 8);
+   irqInit();
+   ticksInit(100);
+   picClearMask(0);
+   __asm__ volatile("sti");
+
+   u32 prev = 0;
+   while (true) {
+      u32 now = ticksGetCount();
+      if (now - prev >= 100) {
+         serialPrintf("tick: %u\n", now);
+         prev = now;
+      }
+   }
 
    // Halt
    kPanic("- System Halted -");
