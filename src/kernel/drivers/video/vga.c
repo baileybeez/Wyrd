@@ -43,8 +43,13 @@ void printf(const char* fmt, ...)
 {
    va_list args;
    va_start(args, fmt);
-   kvPrintf(putChar, fmt, args);
+   vprintf(fmt, args);
    va_end(args);
+}
+
+void vprintf(const char* fmt, va_list args)
+{
+   kvPrintf(putChar, fmt, args);
 }
 
 void putChar(char cb)

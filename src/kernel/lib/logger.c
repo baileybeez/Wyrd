@@ -48,7 +48,7 @@ void logMessage(LogLevel level, const char* fmt, ...)
 
       va_list args;
       va_start(args, fmt);
-      serialPrintf(fmt, args);
+      serialVprintf(fmt, args);
       va_end(args);
 
       serialPrintf("\n");
@@ -61,7 +61,7 @@ void logMessage(LogLevel level, const char* fmt, ...)
 
       va_list args;
       va_start(args, fmt);
-      printf(fmt, args);
+      vprintf(fmt, args);
       va_end(args);
 
       print("\n");
