@@ -3,12 +3,15 @@
 #include "../../lib/kprintf.h"
 #include <stdarg.h>
 
+#define kLineFeed       '\n'
+#define kCarriageReturn '\r'
+#define kBackspace      '\b'
+
 const u16 kVGA_DefaultClearColor = (kColor_Black << 12) | (kColor_LightGray << 8);
 VGA g_vga = {0};
 
 void _vgaScrollUp();
 void _vgaLineFeed();
-void _vgaPutch(char cb);
 
 void vgaInit()
 {
@@ -32,22 +35,7 @@ void vgaSetColor(u8 fg, u8 bg)
 void print(const char *s)
 {
    while (*s) {
-      switch (*s) 
-      {
-         case '\n': 
-            _vgaLineFeed();
-            break;
-         case '\r':
-            g_vga.col = 0;
-            break;
-         default: 
-            if (g_vga.col >= kVideoWidth)
-               _vgaLineFeed();
-            
-            _vgaPutch(*s);
-            break;
-      };
-      s++;
+      putChar(*s++);
    }
 }
 
@@ -55,13 +43,33 @@ void printf(const char* fmt, ...)
 {
    va_list args;
    va_start(args, fmt);
-   kvPrintf(_vgaPutch, fmt, args);
+   kvPrintf(putChar, fmt, args);
    va_end(args);
 }
 
-void _vgaPutch(char cb)
+void putChar(char cb)
 {
-   g_vga.mem[g_vga.row * kVideoWidth + g_vga.col++] = (u8)cb | g_vga.color;
+   switch (cb)
+   {
+      case kLineFeed: 
+         _vgaLineFeed();
+         break;
+      case kCarriageReturn:
+         g_vga.col = 0;
+         break;
+      case kBackspace:
+         if (g_vga.col > 0)
+            g_vga.col--;
+
+         g_vga.mem[g_vga.row * kVideoWidth + g_vga.col] = (u8)' ' | g_vga.color;
+         break;
+      default:
+         if (g_vga.col >= kVideoWidth)
+            _vgaLineFeed();
+
+         g_vga.mem[g_vga.row * kVideoWidth + g_vga.col++] = (u8)cb | g_vga.color;
+         break;
+   }
 }
 
 void _vgaScrollUp()
