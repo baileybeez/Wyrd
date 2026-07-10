@@ -18,16 +18,18 @@ header_end:
 section .bss
 align 16
 stack_bottom:
-   resb 16384                                            ; 16 KiB kernel stack
+   resb 16384                             ; 16 KiB kernel stack
 stack_top:
 
 section .text
 global _start
 extern kernelMain
 _start:
-   mov esp, stack_top
+   mov   esp, stack_top
+   push  ebx                              ; multiboot info pointer
+   push  eax                              ; multiboot magic
    cld
-   call kernelMain
+   call  kernelMain
 
 .hang:
    cli

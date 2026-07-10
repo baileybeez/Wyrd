@@ -9,17 +9,19 @@
 #include "./arch/i686/irq.h"
 #include "./arch/i686/ticks.h"
 
-void kernelMain()
+void kernelMain(u32 mbMagic, u32 mbInfo)
 {
    vgaInit();
    serialInit();
    logInit(kLogInfo, kLogTrace);
-   kInfo("+ VGA initialized.");
-   
+   kTrace("+ VGA initialized.");
+   kTrace("magic: %p", mbMagic);
+   kTrace("info : %p", mbInfo);
+
    gdtInit();
-   kInfo("+ GDT initialized.");
+   kTrace("+ GDT initialized.");
    idtInit();
-   kInfo("+ IDT initialized.");
+   kTrace("+ IDT initialized.");
 
    picRemap(kIrqBase, kIrqBase + 8);
    irqInit();
@@ -39,7 +41,7 @@ void kernelMain()
 
       u32 now = ticksGetCount();
       if (now - prev >= 100) {
-         serialPrintf("tick: %u\n", now);
+         kTrace("tick: %u", now);
          prev = now;
       }
    }
