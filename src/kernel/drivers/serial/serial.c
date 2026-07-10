@@ -60,6 +60,11 @@ void serialPrintf(const char* fmt, ...)
 {
    va_list args;
    va_start(args, fmt);
-   kvPrintf(serialWriteChar, fmt, args);
+   serialVprintf(fmt, args);
    va_end(args);
+}
+
+void serialVprintf(const char* fmt, va_list args)
+{
+   kvPrintf(serialWriteChar, fmt, args);
 }
