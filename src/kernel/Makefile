@@ -15,6 +15,8 @@ ASM_SRCS := entry.asm \
 C_SRCS   := main.c \
 				drivers/serial/serial.c \
 				drivers/video/vga.c \
+				drivers/input/keyboard.c \
+				drivers/input/keyboardMap.c \
 				lib/kprintf.c \
 				lib/logger.c \
 				arch/i686/gdt.c \

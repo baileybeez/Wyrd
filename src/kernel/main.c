@@ -2,6 +2,7 @@
 #include "./lib/logger.h"
 #include "./drivers/serial/serial.h"
 #include "./drivers/video/vga.h"
+#include "./drivers/input/keyboard.h"
 #include "./arch/i686/gdt.h"
 #include "./arch/i686/idt.h"
 #include "./arch/i686/pic.h"
@@ -26,8 +27,16 @@ void kernelMain()
    picClearMask(0);
    __asm__ volatile("sti");
 
+   keyboardInit();
+   picClearMask(1);
+   print("> ");
+
    u32 prev = 0;
    while (true) {
+      char c;
+      if (keyboardTryReadKey(&c))
+         putChar(c);
+
       u32 now = ticksGetCount();
       if (now - prev >= 100) {
          serialPrintf("tick: %u\n", now);
