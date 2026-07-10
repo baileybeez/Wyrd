@@ -2,7 +2,6 @@
 #include "keyboard.h"
 #include "../../arch/i686/irq.h"
 #include "../../arch/i686/io.h"
-#include "../serial/serial.h"
 
 extern const char kScancodeToAscii[128];
 extern const char kScancodeToAsciiShift[128];
