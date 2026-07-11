@@ -86,7 +86,7 @@ static inline void _kbModifierHelper(u8 modFlag, bool released)
       g_modifiers |= modFlag;
 }
 
-static void keyHandler(struct Registers* regs)
+static void keyHandler(Registers* regs)
 {
    (void)regs;
    u8 sc = inb(kKbDataPort);
