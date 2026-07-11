@@ -2,23 +2,23 @@
 #include "idt.h"
 #include "gdt.h"
 
-struct IdtEntry
+typedef struct 
 {
    u16 baseLow;
    u16 selector;
    u8 zero;
    u8 flags;
    u16 baseHigh;
-}__attribute__((packed));
+}__attribute__((packed)) IdtEntry;
 
-struct IdtDescriptor
+typedef struct 
 {
    u16 limit;
    u32 base;
-}__attribute__((packed));
+}__attribute__((packed)) IdtDescriptor;
 
-static struct IdtEntry        _idtEntries[kIDTEntryCount];
-static struct IdtDescriptor   _idtDescriptor;
+static IdtEntry      _idtEntries[kIDTEntryCount];
+static IdtDescriptor _idtDescriptor;
 
 extern void idtFlush(u32 idtAddr);
 
@@ -43,7 +43,7 @@ void idtSetGate(u8 num, u32 base, u16 selector, u8 flags)
 
 void idtInit()
 {
-   _idtDescriptor.limit = (sizeof(struct IdtEntry) * kIDTEntryCount) - 1;
+   _idtDescriptor.limit = (sizeof(IdtEntry) * kIDTEntryCount) - 1;
    _idtDescriptor.base  = (u32)&_idtEntries;
 
    for (i32 i = 0; i < kIDTEntryCount; i++) {

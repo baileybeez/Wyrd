@@ -1,7 +1,7 @@
 #include "bee.h"
 #include "gdt.h"
 
-struct GDTEntry 
+typedef struct  
 {
    u16 limit;
    u16 baseLow;
@@ -9,16 +9,16 @@ struct GDTEntry
    u8  access;
    u8  granularity;
    u8  baseHigh;
-}__attribute__((packed));
+}__attribute__((packed)) GDTEntry;
 
-struct GDTDescriptor
+typedef struct 
 {
    u16 limit;
    u32 ptr;
-}__attribute__((packed));
+}__attribute__((packed)) GDTDescriptor;
 
-static struct GDTEntry        _gdtEntries[kGDTEntryCount];
-static struct GDTDescriptor   _gdtDescriptor;
+static GDTEntry      _gdtEntries[kGDTEntryCount];
+static GDTDescriptor _gdtDescriptor;
 
 extern void gdtFlush(u32 gdtAddr);
 
@@ -26,7 +26,7 @@ void _setGdtEntry(u32 entry, u32 base, u32 limit, u8 access, u8 granularity);
 
 void gdtInit()
 {
-   _gdtDescriptor.limit = (sizeof(struct GDTEntry) * kGDTEntryCount) - 1;
+   _gdtDescriptor.limit = (sizeof(GDTEntry) * kGDTEntryCount) - 1;
    _gdtDescriptor.ptr   = (u32)&_gdtEntries;
 
    _setGdtEntry(0, 0, 0,          0,    0);

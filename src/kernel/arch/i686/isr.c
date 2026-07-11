@@ -32,7 +32,7 @@ static const char* kExceptionMessages[32] = {
     /* 30 */ "Reserved",   /* 31 */ "Reserved"
 };
 
-static void _dumpRegisters(struct Registers* regs, const char* name)
+static void _dumpRegisters(Registers* regs, const char* name)
 {
    u32 cr2 = 0;
    if (regs->intNo == kPageFault) {
@@ -50,7 +50,7 @@ static void _dumpRegisters(struct Registers* regs, const char* name)
 
 }
 
-void isrHandler(struct Registers* regs)
+void isrHandler(Registers* regs)
 {
    const char* name = (regs->intNo < 32) ? kExceptionMessages[regs->intNo] : "Unexpected Interrupt";
 

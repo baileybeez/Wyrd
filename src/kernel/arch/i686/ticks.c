@@ -4,7 +4,7 @@
 
 static volatile u32 g_ticks = 0;
 
-static void tickHandler(struct Registers* regs)
+static void tickHandler(Registers* regs)
 {
    (void)regs;
    g_ticks++;
