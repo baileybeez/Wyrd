@@ -64,7 +64,7 @@ void irqUnregister(u8 irq)
    }
 }
 
-void irqDispatch(struct Registers* regs)
+void irqDispatch(Registers* regs)
 {
    u32 irq = regs->intNo - kIrqBase;
 

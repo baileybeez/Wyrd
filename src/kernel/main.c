@@ -8,6 +8,31 @@
 #include "./arch/i686/pic.h"
 #include "./arch/i686/irq.h"
 #include "./arch/i686/ticks.h"
+#include "./boot/bootInfo.h"
+#include "./boot/multiboot.h"
+#include "./mm/pmm.h"
+
+void stressTestPMM()
+{
+   u32 a = pmmAllocFrame();
+   u32 b = pmmAllocFrame();
+   u32 c = pmmAllocFrame();
+   kTrace("Alloc attempts: %x, %x, %x", a, b, c);
+   kTrace("        frames: %u, %u, %u", a / kFrameSize, b / kFrameSize, c / kFrameSize);
+
+   u32 addr = 0;
+   while (addr != kInvalidFrame) {
+      addr = pmmAllocFrame();
+   }
+   pmmDumpStats();
+
+   pmmFreeFrame(b);
+   pmmDumpStats();
+
+   u32 d = pmmAllocFrame();
+   kTrace("*** PMM STRESS *** Expected that %x == %x", b, d);
+   pmmDumpStats();
+}
 
 void kernelMain(u32 mbMagic, u32 mbInfo)
 {
@@ -15,8 +40,18 @@ void kernelMain(u32 mbMagic, u32 mbInfo)
    serialInit();
    logInit(kLogInfo, kLogTrace);
    kTrace("+ VGA initialized.");
-   kTrace("magic: %p", mbMagic);
-   kTrace("info : %p", mbInfo);
+
+   BootInfo bootInfo = {0};
+   if (mbMagic != kMultibootMagic) {
+      kPanic("Invalid Magic");
+      for(;;);
+   }
+   multiboot2Parse(mbInfo, &bootInfo);
+   kTrace("System RAM: %u", bootInfo.totalSystemRam);
+   kTrace("Kernel    : %p -> %p", bootInfo.kernelPhysStart, bootInfo.kernelPhysEnd);
+   pmmInit(&bootInfo);
+   pmmDumpStats();
+   // stressTestPMM();
 
    gdtInit();
    kTrace("+ GDT initialized.");

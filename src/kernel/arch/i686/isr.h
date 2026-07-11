@@ -1,12 +1,12 @@
 #pragma once
 #include "bee.h"
 
-struct Registers
+typedef struct
 {
    u32 ds;
    u32 edi, esi, ebp, espDummy, ebx, edx, ecx, eax;
    u32 intNo, errCode;
    u32 eip, cs, eflags;
-}__attribute__((packed));
+}__attribute__((packed)) Registers;
 
-void isrHandler(struct Registers* regs);
+void isrHandler(Registers* regs);

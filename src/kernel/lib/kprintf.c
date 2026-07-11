@@ -19,7 +19,7 @@ static void emitString(CharSink sink, const char* s)
 // then we can simply output that array in reverse order.
 //
 //   i.e. u = 256    ==>  ['6', '5', '2']   ==>   sink('2'),sink('5'),sink('6'),
-static void emitUnsigned(CharSink sink, u32 u, u32 base, u32 minWidth, char padChar)
+static void emitUnsigned(CharSink sink, u64 u, u32 base, u32 minWidth, char padChar)
 {
    char buf[32];
    u32  len = 0;
@@ -90,6 +90,11 @@ void kvPrintf(CharSink sink, const char* fmt, va_list args)
          }
          case 'u': {
             u32 v = va_arg(args, u32);
+            emitUnsigned(sink, (u64)v, 10, 0, padChar);
+            break;
+         }
+         case 'l': {
+            u64 v = va_arg(args, u64);
             emitUnsigned(sink, v, 10, 0, padChar);
             break;
          }
