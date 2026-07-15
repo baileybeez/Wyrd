@@ -1,5 +1,7 @@
 ENTRY(_start)
 
+kKernelVirtualBase = 0xC0000000;
+
 SECTIONS
 {
    . = 1M;
@@ -9,22 +11,34 @@ SECTIONS
       KEEP(*(.multiboot))
    }
 
-   .text : ALIGN(4K) {
+   .boot_text : ALIGN(4K) {
+      *(.boot_text)
+   }
+
+   .boot_bss : ALIGN(4K) {
+      *(.boot_bss)
+   }
+
+   . += kKernelVirtualBase;
+   _kernelVirtualStart = .;
+
+   .text ALIGN(4K) : AT(ADDR(.text) - kKernelVirtualBase) {
       *(.text)
    }
 
-   .rodata : ALIGN(4K) {
+   .rodata ALIGN(4K) : AT(ADDR(.rodata) - kKernelVirtualBase) {
       *(.rodata)
    }
 
-   .data : ALIGN(4K) {
+   .data ALIGN(4K) : AT(ADDR(.data) - kKernelVirtualBase) {
       *(.data)
    }
 
-   .bss : ALIGN(4K) {
+   .bss ALIGN(4K) : AT(ADDR(.bss) - kKernelVirtualBase) {
       *(COMMON)
       *(.bss)
    }
 
    _kernelEnd = .;
+   _kernelPhysicalEnd = _kernelEnd - kKernelVirtualBase;
 }
