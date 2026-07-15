@@ -26,9 +26,10 @@ C_SRCS   := main.c \
 				arch/i686/pic.c \
 				arch/i686/pit.c \
 				arch/i686/irq.c \
+				arch/i686/paging.c \
 				arch/i686/ticks.c \
 				boot/multiboot.c \
-				mm/pmm.c
+				mm/pmm.c 
 
 C_OBJS   := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SRCS))
 ASM_OBJS := $(patsubst %.asm,$(OBJ_DIR)/%.o,$(ASM_SRCS))

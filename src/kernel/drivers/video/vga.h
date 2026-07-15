@@ -1,8 +1,10 @@
 #pragma once
 #include "bee.h"
+#include "../../mm/memory.h"
 #include <stdarg.h>
 
-#define kVideoMem    ((u16*)0xB8000)
+#define kVideoPhysMem      0xB8000
+#define kVideoMem          ((u16*)physToVirtual(kVideoPhysMem))
 
 #define kVideoWidth  80
 #define kVideoHeight 25

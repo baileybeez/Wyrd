@@ -7,6 +7,8 @@
 #define kMMapEntryType_Defective 5  // defefctive RAM modules
 // *NOTE* all other 'types' are defined as Reserved
 
+#define kMaxMemoryMapEntries     32 
+
 typedef struct
 {
    u32 baseLow;
@@ -21,7 +23,7 @@ typedef struct
 {
    u32 totalSystemRam;
    u32 mmapEntryCount;
-   MemoryMapEntry* mmapEntries;
+   MemoryMapEntry mmapEntries[kMaxMemoryMapEntries];
    u32* kernelPhysStart;
    u32* kernelPhysEnd;
 } BootInfo;
