@@ -32,6 +32,8 @@ static const char* kExceptionMessages[32] = {
     /* 30 */ "Reserved",   /* 31 */ "Reserved"
 };
 
+static IsrHandler _isrHandlers[32] = { nil };
+
 static void _dumpRegisters(Registers* regs, const char* name)
 {
    u32 cr2 = 0;
@@ -52,10 +54,18 @@ static void _dumpRegisters(Registers* regs, const char* name)
 
 void isrHandler(Registers* regs)
 {
-   const char* name = (regs->intNo < 32) ? kExceptionMessages[regs->intNo] : "Unexpected Interrupt";
-
-   _dumpRegisters(regs, name);
-   for(;;) {
-      __asm__ volatile("cli; hlt");
+   IsrHandler fnc = _isrHandlers[regs->intNo];
+   if (fnc == nil) {
+      const char* name = (regs->intNo < 32) ? kExceptionMessages[regs->intNo] : "Unexpected Interrupt";
+      _dumpRegisters(regs, name);
+      for(;;) { __asm__ volatile("cli; hlt"); }
    }
+
+   fnc(regs);
+}
+
+void isrRegister(u8 vector, IsrHandler handler)
+{
+   if (vector <32)
+      _isrHandlers[vector] = handler;
 }
