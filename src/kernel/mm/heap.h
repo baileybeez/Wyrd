@@ -1,7 +1,7 @@
 #pragma once
 #include "bee.h"
 
-#define kHeapVirtaulStart  0xD0000000
+#define kHeapVirtualStart  0xD0000000
 #define kHeapInitialSize   (64 * 1024)
 #define kHeapMinPayload    16
 

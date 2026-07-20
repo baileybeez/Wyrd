@@ -12,6 +12,7 @@
 #include "./drivers/video/vga.h"
 #include "./lib/logger.h"
 #include "./mm/pmm.h"
+#include "./mm/heap.h"
 
 void stressTestPMM()
 {
@@ -58,9 +59,60 @@ void testPaging()
    kTrace("readback = %x (expects 0xDEADBEEF)", *(u32*)0xE0000000);
    kTrace("phys = %x (want %x)", pagingGetPhysical(0xE0000000), frame);
 
-   // trigger page fault handler
-   pagingUnmapPage(0xE0000000);
-   *(u32*)0xE0000000 = 0x1234;
+   // trigger page fault handler (uncomment to test - will panic kernel for now)
+   // pagingUnmapPage(0xE0000000);
+   // *(u32*)0xE0000000 = 0x1234;
+}
+
+void testHeap()
+{
+   // TEST: allocation
+   u32* p = (u32*)kmalloc(100);
+   kTrace("alloc gave: %p (expects > 0xD0000000)", p);
+
+   // TEST: accessing / assignment
+   *p = 0xdeadbeef;
+   u32 v = *p;
+   kTrace("memory assignment: 0x%x ==? 0xdeadbeef", v);
+
+   p[0] = 1;
+   p[1] = 2;
+   p[2] = 4;
+   p[3] = 8;
+   u32 u = 0;
+   for (int i = 0; i < 4; i++) {
+      u += p[i];
+   }
+   kTrace("array access assignment: %u ==? 15", u);
+
+   // TEST: frame splitting
+   u32* q = (u32*)kmalloc(100);
+   kTrace("alloc gave: %p (expects ~112 bytes higher than first alloc)", q);
+
+   // TEST: frame freeing / coalescing
+   u32* r = kmalloc(100);
+   kfree(p);
+   kfree(q);
+   p = kmalloc(200);
+   kTrace("alloc gave: %p (expects > 0xD0000000 and reusing earlier frame)", p);
+   kfree(r);
+
+   // TEST: fragment use without coalesce
+   p = kmalloc(100);
+   q = kmalloc(100);
+   r = kmalloc(100);
+   kTrace(" -- freeing frame at %p (should be reused in the next malloc)", q);
+   kfree(q);
+   q = kmalloc(64);
+   kTrace("alloc gave: %p (expects > 0xD0000000 and reusing middle frame)", q);
+   kfree(p);
+   kfree(q);
+   kfree(r);
+
+   // TEST: force grow
+   p = kmalloc(kHeapInitialSize * 2);
+   u32 phys = pagingGetPhysical((u32)p);
+   kTrace("growth alloc gave: %p at phys addr: 0x%x (expects > 0xD0000000)", p, phys);
 }
 
 void kernelMain(u32 mbMagic, u32 mbInfo)
@@ -92,6 +144,9 @@ void kernelMain(u32 mbMagic, u32 mbInfo)
 
    pagingInit();
    testPaging();
+
+   heapInit();
+   testHeap();
    
    ticksInit(100);
    picClearMask(0);
