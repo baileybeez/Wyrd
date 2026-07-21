@@ -19,5 +19,8 @@ kernel: | $(GCC_INSTALLED)
 iso: kernel
 	$(MAKE) -C boot/grub/ iso
 
+img: kernel
+	$(MAKE) -C boot/custom/ img
+
 clean:
 	rm -rf $(BUILD_DIR)/test $(BUILD_DIR)/kernel $(BUILD_DIR)/bee.iso 
