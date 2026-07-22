@@ -16,11 +16,11 @@ help:
 kernel: | $(GCC_INSTALLED)
 	$(MAKE) -C $(SRC_DIR)/kernel
 
-iso: kernel
-	$(MAKE) -C boot/grub/ iso
+grub-iso: kernel
+	$(MAKE) -C $(SRC_DIR)/boot/grub/ iso
 
-img: kernel
-	$(MAKE) -C boot/custom/ img
+bee-iso: kernel
+	$(MAKE) -C $(SRC_DIR)/boot/custom/ img
 
 clean:
-	rm -rf $(BUILD_DIR)/test $(BUILD_DIR)/kernel $(BUILD_DIR)/bee.iso 
+	rm -rf $(BUILD_DIR)
