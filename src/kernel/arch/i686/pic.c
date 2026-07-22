@@ -1,6 +1,6 @@
 #include "bee.h"
 #include "pic.h"
-#include "io.h"
+#include "arch/i686/io.h"
 
 #define kIcw1_Init      0x10
 #define kIcw1_Icw4      0x01

@@ -18,6 +18,21 @@ static inline u8 inb(u16 port)
    return ret;
 }
 
+static inline u16 inw(u16 port)
+{
+   u16 ret;
+   __asm__ volatile ("inw %1, %0" : "=a"(ret) : "Nd"(port));
+   return ret;
+}
+
+static inline void insw(u16 port, void* buffer, u32 count)
+{
+   __asm__ volatile ("rep insw"
+                     : "+D"(buffer), "+c"(count)
+                     : "d"(port)
+                     : "memory");
+}
+
 static inline void ioWait()
 {
    outb(0x80, 0);
