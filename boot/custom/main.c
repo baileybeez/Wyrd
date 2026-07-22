@@ -1,5 +1,6 @@
 #include "bee.h"
 #include "drivers/serial/serial.h"
+#include "boot/bootInfo.h"
 
 extern u8 kBootInfoAddr[];
 extern u8 kKernelLoadAddr[];
@@ -23,6 +24,14 @@ void stage2Main(u32 bootDrive)
       for (;;) { __asm__ volatile ("hlt"); }
    }
 
-   serialPrintf("[STAGE2] alive!");
+   serialPrintf("[STAGE2] alive!\n");
+   BootInfo* bi = (BootInfo*)kBootInfoAddr;
+   serialPrintf("E820: %u entries\n", bi->mmapEntryCount);
+   for (u32 i = 0; i < bi->mmapEntryCount; i++) {
+      MemoryMapEntry* e = &bi->mmapEntries[i];
+      serialPrintf("  [%u] base=%x%x len=%x type=%u\n",       
+         i, e->baseHigh, e->baseLow, e->lengthHigh, e->lengthLow, e->type);
+   }
+      
    for (;;) { __asm__ volatile ("hlt"); }
 }

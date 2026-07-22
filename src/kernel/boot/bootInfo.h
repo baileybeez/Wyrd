@@ -1,7 +1,7 @@
 #pragma once
 #include "bee.h"
 
-#define kCustomBootMagic         0xB007BEEF
+#define kCustomBootMagic   0xB007B33F
 
 #define kMMapEntryType_Available       1
 #define kMMapEntryType_AcpiReclaimable 3  // holding ACPI information
@@ -9,7 +9,7 @@
 #define kMMapEntryType_Defective       5  // defefctive RAM modules
 // *NOTE* all other 'types' are defined as Reserved
 
-#define kMaxMemoryMapEntries     32 
+#define kMaxMemoryMapEntries  32 
 
 typedef struct
 {
