@@ -33,6 +33,34 @@ ORG 0x7C00
 %define  kStage2Segment 0x0000
 %define  kStage2Offset  0x7E00
 
+   jmp   short start
+   nop
+; BIOS Parameter Block (FAT16, 10 MB fixed disk)
+bpb_OEMName:         db "BEEBOOT "                 ; 8 bytes @ 0x03
+bpb_BytsPerSec:      dw 512                        ; 0x0B
+bpb_SecPerClus:      db 1                          ; 0x0D
+bpb_RsvdSecCnt:      dw 1 + kStage2Sectors         ; 0x0E - stage1 + stage2
+bpb_NumFATs:         db 2                          ; 0x10
+bpb_RootEntCnt:      dw 512                        ; 0x11 - 32 sectors of root dir
+bpb_TotSec16:        dw 0                          ; 0x13 - (see TotSec32)
+bpb_Media:           db 0xF8                       ; 0x15 - fixed disk
+bpb_FATSz16:         dw 80                         ; 0x16 - ~20400 clusters * 2B / 512
+bpb_SecPerTrk:       dw 63                         ; 0x18
+bpb_NumHeads:        dw 16                         ; 0x1A
+bpb_HiddSec:         dd 0                          ; 0x1C
+bpb_TotSec32:        dd 20480                      ; 0x20 - 10 MB / 512
+bs_DrvNum:           db 0x80                       ; 0x24 - fixed disk convention
+bs_Reserved1:        db 0                          ; 0x25
+bs_BootSig:          db 0x29                       ; 0x26
+bs_VolID:            dd 0xB0EB0EB0                 ; 0x27
+bs_VolLab:           db "BEE OS     "              ; 11 bytes @ 0x2B
+bs_FilSysType:       db "FAT16   "                 ; 8  bytes @ 0x36
+                                                   ; code starts @ 0x3E
+
+%if ($ - $$) != 0x3E
+   %error "BPB size drift — code must start at offset 0x3E"
+%endif
+
 start:
    cli
    xor   ax, ax

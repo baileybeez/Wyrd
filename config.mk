@@ -14,9 +14,10 @@ export TARGET_CFLAGS := -std=c99 -g -ffreestanding -Wall -Wextra
 export TARGET_LFLAGS :=
 export TARGET_LIBS   :=
 
-export TARGET_CC  := $(TARGET)-gcc
-export TARGET_CXX := $(TARGET)-g++
-export TARGET_LD  := $(TARGET)-gcc
+export TARGET_CC      := $(TARGET)-gcc
+export TARGET_CXX 	  := $(TARGET)-g++
+export TARGET_LD  	  := $(TARGET)-gcc
+export TARGET_LINKER  := $(TARGET)-ld
 export TARGET_OBJDUMP := $(TARGET)-objdump
 
 BINUTILS_VER := binutils-2.42
