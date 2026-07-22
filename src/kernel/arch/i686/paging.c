@@ -1,8 +1,8 @@
 #include "bee.h"
-#include "../../lib/logger.h"
-#include "../../lib/mem.h"
-#include "../../mm/memory.h"
-#include "../../mm/pmm.h"
+#include "lib/logger.h"
+#include "lib/mem.h"
+#include "mm/memory.h"
+#include "mm/pmm.h"
 #include "isr.h"
 #include "paging.h"
 

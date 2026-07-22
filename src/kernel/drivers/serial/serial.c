@@ -1,6 +1,6 @@
 #include "bee.h"
-#include "../../arch/i686/io.h"
-#include "../../lib/kprintf.h"
+#include "arch/i686/io.h"
+#include "lib/kprintf.h"
 #include "serial.h"
 
 #include <stdarg.h>

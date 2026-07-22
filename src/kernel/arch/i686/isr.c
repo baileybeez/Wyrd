@@ -1,6 +1,6 @@
 #include "bee.h"
 #include "isr.h"
-#include "../../drivers/serial/serial.h"
+#include "drivers/serial/serial.h"
 
 #define kPageFault 14
 
