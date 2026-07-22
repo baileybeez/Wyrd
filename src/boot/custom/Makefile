@@ -7,9 +7,9 @@
 # 
 
 CUSTOM_SRC		:= $(CURDIR)
-KERNEL_SRC 		:= $(CURDIR)/../../src/kernel/
+KERNEL_SRC 		:= $(CURDIR)/../../kernel/
 CUSTOM_BUILD	:= $(BUILD_DIR)/boot
-INCLUDE_COMMON  := $(CURDIR)/../../src/common/
+INCLUDE_COMMON  := $(CURDIR)/../../common/
 
 STAGE1_BIN		:= $(CUSTOM_BUILD)/stage1.bin
 STAGE2_BIN		:= $(CUSTOM_BUILD)/stage2.bin
@@ -21,8 +21,9 @@ STAGE2_MAX		:= 8192
 
 STAGE2_ASM     	:= stage2.asm
 STAGE2_C       	:= main.c
-SHARED_C		:= $(KERNEL_SRC)/drivers/serial/serial.c \
-				   $(KERNEL_SRC)/lib/kprintf.c 
+SHARED_C		:= $(KERNEL_SRC)/drivers/ata/ata.c \
+				   $(KERNEL_SRC)/drivers/serial/serial.c \
+				   $(KERNEL_SRC)/lib/kprintf.c
 
 STAGE2_OBJDIR	:= $(CUSTOM_BUILD)/objs
 

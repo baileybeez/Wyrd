@@ -1,6 +1,7 @@
 #include "bee.h"
 #include "drivers/serial/serial.h"
 #include "boot/bootInfo.h"
+#include "drivers/ata/ata.h"
 
 extern u8 kBootInfoAddr[];
 extern u8 kKernelLoadAddr[];
@@ -32,6 +33,14 @@ void stage2Main(u32 bootDrive)
       serialPrintf("  [%u] base=%x%x len=%x type=%u\n",       
          i, e->baseHigh, e->baseLow, e->lengthHigh, e->lengthLow, e->type);
    }
-      
+
+   #ifdef kATA_SelfTest
+   // this should report (via serial console): 
+   //    [ATA] selftest: reading LBA 0...
+   //    [ATA] first 16 bytes: eb 3c 90 42 45 45 42 4f 4f 54 20 0 2 1 11 0
+   //    [ATA] selftest: PASS - boot signature 55 AA present
+   ataSelfTest();
+   #endif
+   
    for (;;) { __asm__ volatile ("hlt"); }
 }
