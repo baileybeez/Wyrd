@@ -29,6 +29,7 @@ C_SRCS   := main.c \
 			arch/i686/paging.c \
 			arch/i686/ticks.c \
 			boot/multiboot.c \
+			boot/bootInfo.c \
 			mm/pmm.c \
 			mm/heap.c \
 			fs/fat16/fat16.c

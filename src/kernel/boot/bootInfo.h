@@ -35,3 +35,5 @@ typedef struct
 
 _Static_assert(__builtin_offsetof(BootInfo, mmapEntries) == 20, 
                "BootInfo.mmapEntries offset changed, update boot.inc");
+
+u32 bootInfoCalcSystemRam(const BootInfo* bi);

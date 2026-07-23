@@ -31,7 +31,12 @@ void stage2Main(u32 bootDrive)
    }
 
    serialPrintf("[STAGE2] alive!\n");
+   
    BootInfo* bi = (BootInfo*)kBootInfoAddr;
+   bi->magic = kCustomBootMagic;
+   bi->kernelLoadAddr = (u32)kKernelLoadAddr;
+   bi->bootDrive = bootDrive;
+
    serialPrintf("E820: %u entries\n", bi->mmapEntryCount);
    for (u32 i = 0; i < bi->mmapEntryCount; i++) {
       MemoryMapEntry* e = &bi->mmapEntries[i];
@@ -57,7 +62,7 @@ void stage2Main(u32 bootDrive)
    serialPrintf("[FAT] mounted: fatLba=%d rootLba=%d dataLba=%d bpc=%d\n",
       vol.fatStartLba, vol.rootDirStartLba, vol.dataStartLba, vol.bytesPerCluster);
 
-   u32 firstCluster;
+   u16 firstCluster;
    u32 fileSize;
    err = fat16FindFile(&vol, kKernelFilename, &firstCluster, &fileSize);
    if (err != kFAT16_OK) {
@@ -75,8 +80,11 @@ void stage2Main(u32 bootDrive)
    u8* k = (u8*)kKernelLoadAddr;
    serialPrintf("[FAT] loaded, first 8 bytes: %x %x %x %x %x %x %x %x\n",
       k[0], k[1], k[2], k[3], k[4], k[5], k[6], k[7]);
-      
-   // TODO: jump?
+
+   serialPrintf("[STAGE2] handoff: bootInfo=%x entry=%x\n", 
+      (u32)kBootInfoAddr, (u32)kKernelLoadAddr);
+   return;
+
 halt:
    for (;;) { __asm__ volatile ("hlt"); }
 }

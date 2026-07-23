@@ -14,6 +14,9 @@
 #include "./mm/pmm.h"
 #include "./mm/heap.h"
 
+extern u32 _kernelStart;
+extern u32 _kernelPhysicalEnd;
+
 void stressTestPMM()
 {
    u32 a = pmmAllocFrame();
@@ -115,7 +118,7 @@ void testHeap()
    kTrace("growth alloc gave: %p at phys addr: 0x%x (expects > 0xD0000000)", p, phys);
 }
 
-void kernelMain(u32 mbMagic, u32 mbInfo)
+void kernelMain(BootInfo* bi)
 {
    kTrace("Preparing BeeOS ...");
    vgaInit();
@@ -123,15 +126,13 @@ void kernelMain(u32 mbMagic, u32 mbInfo)
    logInit(kLogInfo, kLogTrace);
    kTrace("+ VGA initialized.");
 
-   BootInfo bootInfo = {0};
-   if (mbMagic != kMultibootMagic) {
-      kPanic("Invalid Magic");
-      for(;;);
-   }
-   multiboot2Parse(mbInfo, &bootInfo);
-   kTrace("System RAM: %u", bootInfo.totalSystemRam);
-   kTrace("Kernel    : %p -> %p", bootInfo.kernelPhysStart, bootInfo.kernelPhysEnd);
-   pmmInit(&bootInfo);
+   bi->kernelPhysStart = &_kernelStart;
+   bi->kernelPhysEnd   = &_kernelPhysicalEnd;
+   bi->totalSystemRam  = bootInfoCalcSystemRam(bi);
+   
+   kTrace("System RAM: %u", bi->totalSystemRam);
+   kTrace("Kernel    : %p -> %p", bi->kernelPhysStart, bi->kernelPhysEnd);
+   pmmInit(bi);
    pmmDumpStats();
    // stressTestPMM();
    

@@ -210,6 +210,9 @@ protected:
    call  stage2Main
    add   esp, 4
 
+   mov   ebx, kBootInfoAddr
+   jmp   kKernelLoadAddr
+
 .halt:
    cli
    hlt

@@ -13,6 +13,7 @@ INCLUDE_COMMON  := $(CURDIR)/../../common/
 
 STAGE1_BIN		:= $(CUSTOM_BUILD)/stage1.bin
 STAGE2_BIN		:= $(CUSTOM_BUILD)/stage2.bin
+KERNEL_BIN		:= $(BUILD_DIR)/kernel/kernel.bin
 
 DISK_SIZE_MB	:= 10
 DISK_IMAGE		:= $(BUILD_DIR)/bee.img
@@ -45,7 +46,7 @@ LINKER_SCRIPT	:= $(CUSTOM_SRC)/linker.ld
 
 iso: $(DISK_IMAGE)
 
-$(DISK_IMAGE): $(STAGE1_BIN) $(STAGE2_BIN)
+$(DISK_IMAGE): $(STAGE1_BIN) $(STAGE2_BIN) $(KERNEL_BIN)
 	dd if=/dev/zero of=$@ bs=1M count=$(DISK_SIZE_MB) status=none
 	mformat -i $@ $(VOLUME_FLAGS) -N $(VOLUME_ID) -v $(VOLUME_NAME) :: 
 	dd if=$(STAGE1_BIN) of=$@ bs=1 count=3 	 conv=notrunc

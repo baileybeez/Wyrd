@@ -4,6 +4,8 @@
 ; enable paging, and jump into the higher-half before calling
 ; into kernelMain
 
+kCustomBootMagic equ 0xB007B33F                          ; must match bootInfo.h and boot.inc
+
 section .multiboot
 align 8
 header_start:
@@ -37,11 +39,14 @@ section .boot_text progbits alloc exec nowrite align=16
 global _start
 _start:
    cld 
-
    mov   esp, boot_stack_top
-   push  ebx                              ; multiboot info pointer
-   push  eax                              ; multiboot magic number
 
+   mov   eax, [ebx]                       ; ebx = BootInfo*; first field is magic
+   cmp   eax, kCustomBootMagic
+   jne   .badMagic 
+
+   push  ebx                              ; bootInfo pointer
+      
    mov   edi, boot_page_directory
    xor   eax, eax
    mov   ecx, 1024
@@ -63,15 +68,19 @@ _start:
 
    jmp   higher_half_entry
 
+.badMagic
+   ; TODO: maybe output something to screen?
+   cli
+   hlt  
+   jmp   .badMagic
+
 section .text
 extern kernelMain
 higher_half_entry:
-   pop   eax                              ; restore multiboot magic
-   pop   ebx                              ; restore multiboot info pointer
-
+   pop   ebx                              ; restore BootInfo*
+   
    mov   esp, stack_top                   ; setup real stack
    push  ebx
-   push  eax
    cld
    call  kernelMain
 
