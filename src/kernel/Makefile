@@ -41,7 +41,9 @@ DEPS     := $(C_OBJS:.o=.d)
 
 LINKER_SCRIPT := $(KERNEL_SRC_DIR)/linker.ld
 
-CFLAGS  := $(TARGET_CFLAGS) -I$(KERNEL_SRC_DIR) -I$(COMMON_SRC_DIR) -MMD -MP
+CFLAGS  := $(TARGET_CFLAGS)  -I$(KERNEL_SRC_DIR) -I$(COMMON_SRC_DIR) -MMD -MP
+CFLAGS  += -g3 -gdwarf-4 -O0 -fno-omit-frame-pointer
+
 LDFLAGS := -T $(LINKER_SCRIPT) -nostdlib
 LIBS    := -lgcc
 

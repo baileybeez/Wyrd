@@ -19,18 +19,21 @@ TOOLCHAIN_BUILD_DIR := $(BUILD_DIR)/toolchain
 export PATH := $(TOOLCHAIN_PREFIX)/bin:$(PATH)
 
 # if these files exist, that phase is complete.
-BINUTILS_INSTALLED := $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-ld
-GCC_INSTALLED      := $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-gcc
+BINUTILS_INSTALLED 	:= $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-ld
+GCC_INSTALLED      	:= $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-gcc
+GDB_INSTALLED 		:= $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-gdb
 
-.PHONY: toolchain toolchain_clean toolchain_binutils toolchain_gcc verify-toolchain
+.PHONY: toolchain toolchain_clean toolchain_binutils toolchain_gcc toolchain_gdb verify-toolchain
 
-toolchain: toolchain_binutils toolchain_gcc
+toolchain: toolchain_binutils toolchain_gcc toolchain_gdb
 
 toolchain_binutils: $(BINUTILS_INSTALLED)
 
 toolchain_gcc: $(GCC_INSTALLED)
 
-# - download BinUtils and GCC (if needed)
+toolchain_gdb: $(GDB_INSTALLED)
+
+# - download BinUtils / GCC / GDB (if needed)
 $(TOOLCHAIN_TARBALLS)/$(BINUTILS_ZIP):
 	mkdir -p $(TOOLCHAIN_TARBALLS)
 	cd $(TOOLCHAIN_TARBALLS) && wget -c $(BINUTILS_URL)
@@ -39,6 +42,10 @@ $(TOOLCHAIN_TARBALLS)/$(GCC_ZIP):
 	mkdir -p $(TOOLCHAIN_TARBALLS)
 	cd $(TOOLCHAIN_TARBALLS) && wget -c $(GCC_URL)
 
+$(TOOLCHAIN_TARBALLS)/$(GDB_ZIP):
+	mkdir -p $(TOOLCHAIN_TARBALLS)
+	cd $(TOOLCHAIN_TARBALLS) && wget -c $(GDB_URL)
+
 # - extract files
 $(TOOLCHAIN_DIR)/$(BINUTILS_VER)/.extracted: $(TOOLCHAIN_TARBALLS)/$(BINUTILS_ZIP)
 	cd $(TOOLCHAIN_DIR) && tar -xf tarballs/$(BINUTILS_ZIP)
@@ -46,6 +53,11 @@ $(TOOLCHAIN_DIR)/$(BINUTILS_VER)/.extracted: $(TOOLCHAIN_TARBALLS)/$(BINUTILS_ZI
 
 $(TOOLCHAIN_DIR)/$(GCC_VER)/.extracted: $(TOOLCHAIN_TARBALLS)/$(GCC_ZIP)
 	cd $(TOOLCHAIN_DIR) && tar -xf tarballs/$(GCC_ZIP)
+	touch $@
+
+$(TOOLCHAIN_DIR)/$(GDB_VER)/.extracted: $(TOOLCHAIN_TARBALLS)/$(GDB_ZIP)
+	echo $(TOOLCHAIN_DIR)/$(GDB_VER)/.extracted
+	cd $(TOOLCHAIN_DIR) && tar -xf tarballs/$(GDB_ZIP)
 	touch $@
 
 # - install pre-reqs
@@ -79,6 +91,22 @@ $(GCC_INSTALLED): $(TOOLCHAIN_DIR)/$(GCC_VER)/.prereqs $(BINUTILS_INSTALLED)
 	$(MAKE) -j$(JOBS) -C $(TOOLCHAIN_BUILD_DIR)/gcc all-gcc all-target-libgcc
 	$(MAKE) -C $(TOOLCHAIN_BUILD_DIR)/gcc install-gcc install-target-libgcc
 
+# - build and install GDB 
+$(GDB_INSTALLED): $(TOOLCHAIN_DIR)/$(GDB_VER)/.extracted
+	mkdir -p $(TOOLCHAIN_BUILD_DIR)/gdb
+	cd $(TOOLCHAIN_BUILD_DIR)/gdb && \
+	   $(abspath $(TOOLCHAIN_DIR)/$(GDB_VER))/configure \
+	      --prefix=$(TOOLCHAIN_PREFIX) \
+	      --target=$(TARGET) \
+	      --disable-nls \
+	      --disable-werror \
+		  --with-system-readline \
+   	      --with-expat=yes
+	$(MAKE) -j$(JOBS) -C $(TOOLCHAIN_BUILD_DIR)/gdb
+	$(MAKE) -C $(TOOLCHAIN_BUILD_DIR)/gdb install
+	cp -r $(abspath $(TOOLCHAIN_DIR)/$(GDB_VER))/gdb/features \
+	      $(TOOLCHAIN_PREFIX)/share/gdb/
+
 # - verify toolchain, builds a sample app and confirms bin format
 VERIFY_OBJ := $(BUILD_DIR)/test/helloworld.o
 
@@ -105,4 +133,5 @@ toolchain_clean:
 toolchain_distclean: toolchain_clean
 	rm -rf $(TOOLCHAIN_DIR)/$(BINUTILS_VER) \
 	       $(TOOLCHAIN_DIR)/$(GCC_VER) \
-	       $(TOOLCHAIN_PREFIX)
+	       $(TOOLCHAIN_PREFIX) \
+		   $(TOOLCHAIN_DIR)/$(GDB_VER)

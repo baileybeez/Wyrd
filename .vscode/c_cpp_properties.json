@@ -1,0 +1,17 @@
+{
+   "configurations": [
+      {
+         "name": "kernel", 
+         "compilerPath": "",
+         "intelliSenseMode": "gcc-x86",
+         "cStandard": "gnu11",
+         "defines": ["__GNUC__=13", "__i386__=1", "__ELF__=1"],
+         "includePath": [
+            "${workspaceFolder}/src/kernel",
+            "${workspaceFolder}/src/common", 
+            "${workspaceFolder}/toolchain/i686-elf/lib/gcc/i686-elf/13.2.0/include"
+         ]
+      }
+   ],
+   "version": 4
+}

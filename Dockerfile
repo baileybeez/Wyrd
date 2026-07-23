@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libmpc-dev \
       libmpfr-dev \
       libisl-dev \
+      libreadline-dev \
+      libexpat1-dev \
       texinfo \
       wget \
       ca-certificates \
