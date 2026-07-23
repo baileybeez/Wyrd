@@ -1,7 +1,6 @@
 OUTPUT_FORMAT(binary)
 ENTRY(_start)
 
-kBootInfoAddr        = 0x00001000;
 kFatBufferAddr       = 0x00020000;  /* up to 64 KB */
 kRootDirBufferAddr   = 0x00030000;  /* up to 16 KB */
 kKernelLoadAddr      = 0x00100000;  /* this much match kernel's linker */

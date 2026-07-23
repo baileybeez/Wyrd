@@ -11,6 +11,7 @@
 #include "./drivers/serial/serial.h"
 #include "./drivers/video/vga.h"
 #include "./lib/logger.h"
+#include "./lib/mem.h"
 #include "./mm/pmm.h"
 #include "./mm/heap.h"
 
@@ -120,10 +121,7 @@ void testHeap()
 
 void kernelMain(BootInfo* bi)
 {
-   kTrace("Preparing BeeOS ...");
    vgaInit();
-   serialInit();
-   logInit(kLogInfo, kLogTrace);
    kTrace("+ VGA initialized.");
 
    bi->kernelPhysStart = &_kernelStart;
@@ -174,4 +172,30 @@ void kernelMain(BootInfo* bi)
    kPanic("- System Halted -");
    for (;;);
    return;
+}
+
+void kernelBootstrap(u32 magic, u32 ptr)
+{
+   serialInit();
+   logInit(kLogInfo, kLogTrace);
+   kTrace("Preparing BeeOS ...");
+   kTrace("[BOOT] magic=%x, ptr=%x", magic, ptr);
+
+   BootInfo* bi = (BootInfo*)kBootInfoAddr;
+   if (magic == kCustomBootMagic) {
+      // stage2 already built out the BootInfo struct
+      // ptr should equal (u32)kBootInfoAddr; nothing to do
+      (void)ptr;
+   } else if (magic == kMultibootMagic) {
+      memset(bi, 0, sizeof(BootInfo));
+      bi->magic          = kCustomBootMagic;
+      bi->kernelLoadAddr = kKernelLoadAddr;
+      bi->bootDrive      = 0;
+      multiboot2Parse(ptr, bi);
+   } else {
+      kPanic("Unknown bootloader: %x", magic);
+      for (;;);
+   }
+
+   kernelMain(bi);
 }

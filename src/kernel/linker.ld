@@ -7,12 +7,12 @@ SECTIONS
    . = 1M;
    _kernelStart = .;
 
-   .multiboot : ALIGN(8) {
-      KEEP(*(.multiboot))
-   }
-
    .boot_text : ALIGN(4K) {
       *(.boot_text)
+   }
+   
+   .multiboot : ALIGN(8) {
+      KEEP(*(.multiboot))
    }
 
    .boot_bss : ALIGN(4K) {

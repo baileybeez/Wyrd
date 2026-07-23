@@ -210,6 +210,7 @@ protected:
    call  stage2Main
    add   esp, 4
 
+   mov   eax, kCustomBootMagic
    mov   ebx, kBootInfoAddr
    jmp   kKernelLoadAddr
 

@@ -6,8 +6,6 @@
 
 #define kKernelFilename "kernel.bin"
 
-extern u8 kBootInfoAddr[];
-extern u8 kKernelLoadAddr[];
 extern u8 kFatBufferAddr[];
 extern u8 kRootDirBufferAddr[];
 
@@ -22,7 +20,6 @@ static void fallback_vgaWrite(const char* s)
 void stage2Main(u32 bootDrive)
 {
    (void)bootDrive;
-   (void)kBootInfoAddr;
    (void)kKernelLoadAddr;
 
    if (!serialInit()) {

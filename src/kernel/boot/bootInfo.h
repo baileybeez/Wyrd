@@ -3,6 +3,10 @@
 
 #define kCustomBootMagic   0xB007B33F
 
+// NOTE: these addresses must match what's defined in /src/boot/custom/boot.inc
+#define kBootInfoAddr      0x1000
+#define kKernelLoadAddr    0x00100000
+
 #define kMMapEntryType_Available       1
 #define kMMapEntryType_AcpiReclaimable 3  // holding ACPI information
 #define kMMapEntryType_Reserved        4  // must be preserved for hibernation
