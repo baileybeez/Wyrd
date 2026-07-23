@@ -2,7 +2,18 @@
 ; 
 ; bootstrap a temporary identity and higher-half 4MB page, 
 ; enable paging, and jump into the higher-half before calling
-; into kernelMain
+; into `kernelBootstrap` for Magic / BootInfo parsing before
+; calling `kernelMain`
+;
+; NOTE: _start MUST be the first instruction in the output binary.
+; stage2 loads kernel.bin (raw) and jumps to its base address; if the
+; multiboot header sits there instead, the CPU executes it as code —
+; the first byte is 0xD6 (SALC), which silently zeroes AL and corrupts
+; the boot magic in eax before it ever reaches paging setup.
+;
+
+kMultibootMagic   equ 0x36D76289
+kCustomBootMagic  equ 0xB007B33F                          ; must match bootInfo.h and boot.inc
 
 section .multiboot
 align 8
@@ -37,11 +48,11 @@ section .boot_text progbits alloc exec nowrite align=16
 global _start
 _start:
    cld 
-
    mov   esp, boot_stack_top
-   push  ebx                              ; multiboot info pointer
-   push  eax                              ; multiboot magic number
 
+   push  ebx                              ; bootInfo pointer
+   push  eax                              ; boot magic 
+   
    mov   edi, boot_page_directory
    xor   eax, eax
    mov   ecx, 1024
@@ -64,16 +75,16 @@ _start:
    jmp   higher_half_entry
 
 section .text
-extern kernelMain
+extern kernelBootstrap
 higher_half_entry:
-   pop   eax                              ; restore multiboot magic
-   pop   ebx                              ; restore multiboot info pointer
-
+   pop   eax                              ; restore magic 
+   pop   ebx                              ; restore pointer
+   
    mov   esp, stack_top                   ; setup real stack
    push  ebx
    push  eax
    cld
-   call  kernelMain
+   call  kernelBootstrap
 
 .hang:
    cli

@@ -1,0 +1,39 @@
+OUTPUT_FORMAT(binary)
+ENTRY(_start)
+
+kFatBufferAddr       = 0x00020000;  /* up to 64 KB */
+kRootDirBufferAddr   = 0x00030000;  /* up to 16 KB */
+kKernelLoadAddr      = 0x00100000;  /* this much match kernel's linker */
+
+SECTIONS
+{
+   . = 0x7E00;
+
+   .text : { 
+      *(.text.entry)
+      *(.text .text.*)
+   }
+
+   .rodata : {
+      *(.rodata .rodata.*)
+   }
+
+   .data : {
+      *(.data .data.*)
+   }
+
+   .bss (NOLOAD) : {
+      _bssStart = .;
+      *(.bss .bss.*)
+      *(COMMON)
+      _bssEnd = .;
+   }
+
+   _stage2End = .;
+
+   /DISCARD/ : {
+      *(.comment)
+      *(.note*)
+      *(.eh_frame)
+   }
+}

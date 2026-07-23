@@ -1,6 +1,6 @@
 #include "bee.h"
 #include "pit.h"
-#include "io.h"
+#include "arch/i686/io.h"
 
 #define kPitMode_SquareWave   0x36
 #define kPitMode_RateGen      0x34

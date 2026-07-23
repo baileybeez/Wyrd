@@ -1,13 +1,19 @@
 #pragma once
 #include "bee.h"
 
-#define kMMapEntryType_Available 1
-#define kMMapEntryType_Useable   3  // holding ACPI information
-#define kMMapEntryType_Reserved  4  // must be preserved for hibernation
-#define kMMapEntryType_Defective 5  // defefctive RAM modules
+#define kCustomBootMagic   0xB007B33F
+
+// NOTE: these addresses must match what's defined in /src/boot/custom/boot.inc
+#define kBootInfoAddr      0x1000
+#define kKernelLoadAddr    0x00100000
+
+#define kMMapEntryType_Available       1
+#define kMMapEntryType_AcpiReclaimable 3  // holding ACPI information
+#define kMMapEntryType_Reserved        4  // must be preserved for hibernation
+#define kMMapEntryType_Defective       5  // defefctive RAM modules
 // *NOTE* all other 'types' are defined as Reserved
 
-#define kMaxMemoryMapEntries     32 
+#define kMaxMemoryMapEntries  32 
 
 typedef struct
 {
@@ -21,9 +27,17 @@ typedef struct
 
 typedef struct 
 {
+   u32 magic;
+   u32 kernelLoadAddr;
+   u32 bootDrive;
    u32 totalSystemRam;
    u32 mmapEntryCount;
    MemoryMapEntry mmapEntries[kMaxMemoryMapEntries];
    u32* kernelPhysStart;
    u32* kernelPhysEnd;
 } BootInfo;
+
+_Static_assert(__builtin_offsetof(BootInfo, mmapEntries) == 20, 
+               "BootInfo.mmapEntries offset changed, update boot.inc");
+
+u32 bootInfoCalcSystemRam(const BootInfo* bi);

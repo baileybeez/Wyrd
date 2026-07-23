@@ -1,6 +1,6 @@
 #include "bee.h"
 #include "vga.h"
-#include "../../lib/kprintf.h"
+#include "lib/kprintf.h"
 #include <stdarg.h>
 
 #define kLineFeed       '\n'

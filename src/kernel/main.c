@@ -11,8 +11,12 @@
 #include "./drivers/serial/serial.h"
 #include "./drivers/video/vga.h"
 #include "./lib/logger.h"
+#include "./lib/mem.h"
 #include "./mm/pmm.h"
 #include "./mm/heap.h"
+
+extern u32 _kernelStart;
+extern u32 _kernelPhysicalEnd;
 
 void stressTestPMM()
 {
@@ -115,23 +119,18 @@ void testHeap()
    kTrace("growth alloc gave: %p at phys addr: 0x%x (expects > 0xD0000000)", p, phys);
 }
 
-void kernelMain(u32 mbMagic, u32 mbInfo)
+void kernelMain(BootInfo* bi)
 {
-   kTrace("Preparing BeeOS ...");
    vgaInit();
-   serialInit();
-   logInit(kLogInfo, kLogTrace);
    kTrace("+ VGA initialized.");
 
-   BootInfo bootInfo = {0};
-   if (mbMagic != kMultibootMagic) {
-      kPanic("Invalid Magic");
-      for(;;);
-   }
-   multiboot2Parse(mbInfo, &bootInfo);
-   kTrace("System RAM: %u", bootInfo.totalSystemRam);
-   kTrace("Kernel    : %p -> %p", bootInfo.kernelPhysStart, bootInfo.kernelPhysEnd);
-   pmmInit(&bootInfo);
+   bi->kernelPhysStart = &_kernelStart;
+   bi->kernelPhysEnd   = &_kernelPhysicalEnd;
+   bi->totalSystemRam  = bootInfoCalcSystemRam(bi);
+   
+   kTrace("System RAM: %u", bi->totalSystemRam);
+   kTrace("Kernel    : %p -> %p", bi->kernelPhysStart, bi->kernelPhysEnd);
+   pmmInit(bi);
    pmmDumpStats();
    // stressTestPMM();
    
@@ -173,4 +172,30 @@ void kernelMain(u32 mbMagic, u32 mbInfo)
    kPanic("- System Halted -");
    for (;;);
    return;
+}
+
+void kernelBootstrap(u32 magic, u32 ptr)
+{
+   serialInit();
+   logInit(kLogInfo, kLogTrace);
+   kTrace("Preparing BeeOS ...");
+   kTrace("[BOOT] magic=%x, ptr=%x", magic, ptr);
+
+   BootInfo* bi = (BootInfo*)kBootInfoAddr;
+   if (magic == kCustomBootMagic) {
+      // stage2 already built out the BootInfo struct
+      // ptr should equal (u32)kBootInfoAddr; nothing to do
+      (void)ptr;
+   } else if (magic == kMultibootMagic) {
+      memset(bi, 0, sizeof(BootInfo));
+      bi->magic          = kCustomBootMagic;
+      bi->kernelLoadAddr = kKernelLoadAddr;
+      bi->bootDrive      = 0;
+      multiboot2Parse(ptr, bi);
+   } else {
+      kPanic("Unknown bootloader: %x", magic);
+      for (;;);
+   }
+
+   kernelMain(bi);
 }

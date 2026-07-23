@@ -1,6 +1,6 @@
 #pragma once
 #include "bee.h"
-#include "../../mm/memory.h"
+#include "mm/memory.h"
 #include <stdarg.h>
 
 #define kVideoPhysMem      0xB8000
