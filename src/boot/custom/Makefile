@@ -14,8 +14,11 @@ INCLUDE_COMMON  := $(CURDIR)/../../common/
 STAGE1_BIN		:= $(CUSTOM_BUILD)/stage1.bin
 STAGE2_BIN		:= $(CUSTOM_BUILD)/stage2.bin
 
-DISK_IMAGE		:= $(BUILD_DIR)/bee.img
 DISK_SIZE_MB	:= 10
+DISK_IMAGE		:= $(BUILD_DIR)/bee.img
+VOLUME_ID		:= B0EB0EB0
+VOLUME_NAME		:= "BEE OS"
+VOLUME_FLAGS	:= -t 21 -h 16 -s 63 -c 1 -R 17 -r 32 -M 512 
 
 STAGE2_MAX		:= 8192
 
@@ -23,7 +26,8 @@ STAGE2_ASM     	:= stage2.asm
 STAGE2_C       	:= main.c
 SHARED_C		:= $(KERNEL_SRC)/drivers/ata/ata.c \
 				   $(KERNEL_SRC)/drivers/serial/serial.c \
-				   $(KERNEL_SRC)/lib/kprintf.c
+				   $(KERNEL_SRC)/lib/kprintf.c \
+				   $(KERNEL_SRC)/fs/fat16/fat16.c \
 
 STAGE2_OBJDIR	:= $(CUSTOM_BUILD)/objs
 
@@ -37,14 +41,17 @@ CFLAGS			:= -m32 -ffreestanding -nostdlib -fno-pic -fno-stack-protector \
 
 LINKER_SCRIPT	:= $(CUSTOM_SRC)/linker.ld
 
-.PHONY: img clean
+.PHONY: iso clean
 
-img: $(DISK_IMAGE)
+iso: $(DISK_IMAGE)
 
 $(DISK_IMAGE): $(STAGE1_BIN) $(STAGE2_BIN)
 	dd if=/dev/zero of=$@ bs=1M count=$(DISK_SIZE_MB) status=none
-	dd if=$(STAGE1_BIN) of=$@ conv=notrunc status=none
-	dd if=$(STAGE2_BIN) of=$@ bs=512 seek=1 conv=notrunc status=none
+	mformat -i $@ $(VOLUME_FLAGS) -N $(VOLUME_ID) -v $(VOLUME_NAME) :: 
+	dd if=$(STAGE1_BIN) of=$@ bs=1 count=3 	 conv=notrunc
+	dd if=$(STAGE1_BIN) of=$@ bs=1 count=450 skip=62 seek=62 conv=notrunc
+	dd if=$(STAGE2_BIN) of=$@ bs=512 seek=1  conv=notrunc
+	mcopy -i $@ $(BUILD_DIR)/kernel/kernel.bin ::/KERNEL.BIN
 
 $(STAGE1_BIN): $(CUSTOM_SRC)/stage1.asm
 	@mkdir -p $(dir $@)

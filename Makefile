@@ -20,7 +20,7 @@ grub-iso: kernel
 	$(MAKE) -C $(SRC_DIR)/boot/grub/ iso
 
 bee-iso: kernel
-	$(MAKE) -C $(SRC_DIR)/boot/custom/ img
+	$(MAKE) -C $(SRC_DIR)/boot/custom/ iso
 
 clean:
 	rm -rf $(BUILD_DIR)

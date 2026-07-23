@@ -19,6 +19,7 @@ export TARGET_CXX 	  := $(TARGET)-g++
 export TARGET_LD  	  := $(TARGET)-gcc
 export TARGET_LINKER  := $(TARGET)-ld
 export TARGET_OBJDUMP := $(TARGET)-objdump
+export TARGET_OBJCOPY := $(TARGET)-objcopy
 
 BINUTILS_VER := binutils-2.42
 BINUTILS_ZIP := $(BINUTILS_VER).tar.gz
