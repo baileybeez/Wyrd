@@ -1,0 +1,35 @@
+{
+   "version": "0.2.0",
+   "configurations": [
+      {
+         "name": "Debug Kernel (QEMU + GDB in container)",
+         "type": "cppdbg",
+         "request": "launch",
+         "program": "/workspace/build/kernel/kernel.elf",
+         "cwd": "/workspace",
+         "MIMode": "gdb",
+         "externalConsole": false,
+         "pipeTransport": {
+            "pipeCwd": "${workspaceFolder}",
+            "pipeProgram": "docker",
+            "pipeArgs": [
+               "exec", "-i", "os-dev",
+            ],
+            "debuggerPath": "/workspace/toolchain/i686-elf/bin/i686-elf-gdb",
+            "quoteArgs": false
+         },
+         "stopAtEntry": false,
+         "setupCommands": [
+            { "text": "set disassembly-flavor intel" },
+            { "text": "set print pretty on" },
+            { "text": "symbol-file /workspace/build/kernel/kernel.elf" },
+            { "text": "target remote host.docker.internal:1234"},
+            { "text": "hbreak *0x100000" }
+         ],
+         "sourceFileMap": {
+            "/workspace": "${workspaceFolder}"
+         },
+         "preLaunchTask": ""
+      }
+   ]
+}
