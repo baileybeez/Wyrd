@@ -9,7 +9,7 @@
 > This software is purely for educational purposes and far from complete. It will crash and is missing key features. Keep your expectations low.
 
 ## Summary
-Wyrd is a 32-bit operating system for x86 devices. The project goal is learning of core concepts required to build and maintain a from-scratch operating system in ASM and C. It is a very barebones product, offering a serial console (for debugging), vga text support, basic FAT16 support via ATA, keyboard support, memory mapping, and virtual paging. 
+Wyrd is a 32-bit operating system for x86 devices. The project goal is learning core concepts required to build and maintain a from-scratch operating system in ASM and C. It is a very barebones product, offering a serial console (for debugging), vga text support, basic FAT16 support via ATA, keyboard support, memory mapping, and virtual paging. 
 
 ---
 
