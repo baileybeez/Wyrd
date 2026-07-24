@@ -14,6 +14,8 @@
 #include "./lib/mem.h"
 #include "./mm/pmm.h"
 #include "./mm/heap.h"
+#include "./scheduler/thread.h"
+#include "./scheduler/scheduler.h"
 
 extern u32 _kernelStart;
 extern u32 _kernelPhysicalEnd;
@@ -119,6 +121,9 @@ void testHeap()
    kTrace("growth alloc gave: %p at phys addr: 0x%x (expects > 0xD0000000)", p, phys);
 }
 
+static void _demoA() { for (;;) { serialWriteString("A"); } }
+static void _demoB() { for (;;) { serialWriteString("B"); } }
+
 void kernelMain(BootInfo* bi)
 {
    vgaInit();
@@ -153,6 +158,12 @@ void kernelMain(BootInfo* bi)
 
    keyboardInit();
    picClearMask(1);
+
+   schedulerInit();
+   threadCreate(_demoA);
+   threadCreate(_demoB);
+   for (;;) __asm__ volatile("hlt");
+      
    print("> ");
 
    u32 prev = 0;
@@ -170,7 +181,7 @@ void kernelMain(BootInfo* bi)
 
    // Halt
    kPanic("- System Halted -");
-   for (;;);
+   kHalt();
    return;
 }
 
@@ -194,7 +205,7 @@ void kernelBootstrap(u32 magic, u32 ptr)
       multiboot2Parse(ptr, bi);
    } else {
       kPanic("Unknown bootloader: %x", magic);
-      for (;;);
+      kHalt();
    }
 
    kernelMain(bi);

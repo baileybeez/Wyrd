@@ -83,5 +83,5 @@ void stage2Main(u32 bootDrive)
    return;
 
 halt:
-   for (;;) { __asm__ volatile ("hlt"); }
+   kHalt();
 }

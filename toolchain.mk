@@ -48,16 +48,16 @@ $(TOOLCHAIN_TARBALLS)/$(GDB_ZIP):
 
 # - extract files
 $(TOOLCHAIN_DIR)/$(BINUTILS_VER)/.extracted: $(TOOLCHAIN_TARBALLS)/$(BINUTILS_ZIP)
-	cd $(TOOLCHAIN_DIR) && tar -xf tarballs/$(BINUTILS_ZIP)
+	cd $(TOOLCHAIN_DIR) && tar -xvf tarballs/$(BINUTILS_ZIP)
 	touch $@
 
 $(TOOLCHAIN_DIR)/$(GCC_VER)/.extracted: $(TOOLCHAIN_TARBALLS)/$(GCC_ZIP)
-	cd $(TOOLCHAIN_DIR) && tar -xf tarballs/$(GCC_ZIP)
+	cd $(TOOLCHAIN_DIR) && tar -xvf tarballs/$(GCC_ZIP)
 	touch $@
 
 $(TOOLCHAIN_DIR)/$(GDB_VER)/.extracted: $(TOOLCHAIN_TARBALLS)/$(GDB_ZIP)
 	echo $(TOOLCHAIN_DIR)/$(GDB_VER)/.extracted
-	cd $(TOOLCHAIN_DIR) && tar -xf tarballs/$(GDB_ZIP)
+	cd $(TOOLCHAIN_DIR) && tar -xvf tarballs/$(GDB_ZIP)
 	touch $@
 
 # - install pre-reqs

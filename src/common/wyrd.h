@@ -22,3 +22,4 @@ typedef unsigned char  bool;
 #define max(a, b)   ((a) > (b) ? (a) : (b))
 
 #define kLowHighToU64(high, low) (u64)(((u64)high << 16) | low)
+#define kHalt()                  for(;;) { __asm__ volatile("cli; hlt;"); }

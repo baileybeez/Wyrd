@@ -3,5 +3,13 @@
       "editor.insertSpaces": false,
       "editor.tabSize": 4,
       "editor.detectIndentation": false
+   },
+   "C_Cpp.files.exclude": {
+      "**/toolchain": true,
+      "**/build": true
+   },
+   "search.exclude": {
+      "**/toolchain": true,
+      "**/build": true
    }
 }

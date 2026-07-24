@@ -37,7 +37,8 @@ switch ($mediaType) {
 }
 
 $qemuArgs += @(
-   "-serial",     "stdio",
+   "-chardev",    "stdio,id=char0,logfile=logs/serial.log,signal=off", 
+   "-serial",     "chardev:char0"
    "-debugcon",   "file:logs/debug-qemu.log",
    "-no-reboot",
    "-no-shutdown",
