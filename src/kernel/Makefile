@@ -11,7 +11,8 @@ OBJ_DIR        := $(KERNEL_BUILD)/obj
 ASM_SRCS := entry.asm \
 			arch/i686/descriptor_tables.asm \
 			arch/i686/isr_stubs.asm \
-			arch/i686/irq_stubs.asm
+			arch/i686/irq_stubs.asm \
+			sched/switchContext.asm 
 C_SRCS   := main.c \
 			drivers/serial/serial.c \
 			drivers/video/vga.c \
@@ -32,7 +33,8 @@ C_SRCS   := main.c \
 			boot/bootInfo.c \
 			mm/pmm.c \
 			mm/heap.c \
-			fs/fat16/fat16.c
+			fs/fat16/fat16.c \
+			sched/thread.c 
 
 C_OBJS   := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SRCS))
 ASM_OBJS := $(patsubst %.asm,$(OBJ_DIR)/%.o,$(ASM_SRCS))

@@ -15,6 +15,11 @@
 kMultibootMagic   equ 0x36D76289
 kCustomBootMagic  equ 0xB007B33F                          ; must match bootInfo.h and boot.inc
 
+global _start
+global boot_page_directory
+global stack_bottom
+global stack_top
+
 section .multiboot
 align 8
 header_start:
@@ -35,7 +40,6 @@ kPageDirEntryHighHalf   equ (kKernelVirtualBase >> 22)
 kPdeFlags               equ 0x83                         ; present | writable | PS (4MB)
 
 section .boot_bss nobits alloc noexec write align=4096
-global boot_page_directory
 boot_page_directory:
    resd  1024
 
@@ -45,7 +49,6 @@ boot_stack_bottom:
 boot_stack_top:
 
 section .boot_text progbits alloc exec nowrite align=16
-global _start
 _start:
    cld 
    mov   esp, boot_stack_top
