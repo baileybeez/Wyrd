@@ -62,7 +62,7 @@ static void _pagingFaultHandler(Registers* regs)
       (regs->errCode & 0x1) ? "protection" : "not-present",
       (regs->errCode & 0x2) ? "write" : "read",
       (regs->errCode & 0x4) ? "user" : "kernel");
-   for (;;) __asm__ volatile("cli; hlt");
+   kHalt();
 }
 
 void pagingInit()
