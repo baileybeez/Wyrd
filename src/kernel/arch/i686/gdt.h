@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bee.h"
+#include "wyrd.h"
 
 #define kGDTEntryCount 5
 

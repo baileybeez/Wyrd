@@ -7,11 +7,14 @@ all: help
 
 help:
 	@echo "Targets:"
-	@echo "  make toolchain           Build binutils + GCC cross-compiler for $(TARGET)."
-	@echo "  make verify-toolchain    Compile test/helloworld.c and confirm the"
+	@echo "  make toolchain           build binutils + GCC cross-compiler for $(TARGET)."
+	@echo "                              + override: 'JOBS=N' (parallelism, default: nproc)"
+	@echo "  make verify-toolchain    compile test/helloworld.c and confirm the toolchain"
 	@echo ""
-	@echo "Overrides:"
-	@echo "  JOBS=N                   Parallelism for toolchain build (default: nproc)."
+	@echo "  make kernel 			  build only the kernel"
+	@echo "  make grub-iso 		      builds an ISO using the GRUB bootloader"
+	@echo "  make wyrd-iso 		      builds a disk image using the custom bootloader"
+	@echo ""
 
 kernel: | $(GCC_INSTALLED)
 	$(MAKE) -C $(SRC_DIR)/kernel
@@ -19,7 +22,7 @@ kernel: | $(GCC_INSTALLED)
 grub-iso: kernel
 	$(MAKE) -C $(SRC_DIR)/boot/grub/ iso
 
-bee-iso: kernel
+wyrd: kernel
 	$(MAKE) -C $(SRC_DIR)/boot/custom/ iso
 
 clean:

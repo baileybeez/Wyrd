@@ -1,4 +1,4 @@
-#include "bee.h"
+#include "wyrd.h"
 #include "logger.h"
 #include "../drivers/video/vga.h"
 #include "../drivers/serial/serial.h"

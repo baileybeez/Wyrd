@@ -1,4 +1,4 @@
-#include "bee.h"
+#include "wyrd.h"
 #include "fat16.h"
 
 #define kExtSep '.'

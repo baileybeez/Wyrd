@@ -1,4 +1,4 @@
-#include "bee.h"
+#include "wyrd.h"
 #include "lib/logger.h"
 #include "mm/memory.h"
 #include "multiboot.h"

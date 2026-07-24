@@ -1,4 +1,4 @@
-#include "bee.h"
+#include "wyrd.h"
 #include "gdt.h"
 
 typedef struct  

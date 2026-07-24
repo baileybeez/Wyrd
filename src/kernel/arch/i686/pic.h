@@ -1,5 +1,5 @@
 #pragma once
-#include "bee.h"
+#include "wyrd.h"
 
 #define kPicPrimary_Cmd    0x20
 #define kPicPrimary_Data   0x21

@@ -1,4 +1,4 @@
-#include "bee.h"
+#include "wyrd.h"
 #include "../arch/i686/paging.h"
 #include "pmm.h"
 #include "heap.h"

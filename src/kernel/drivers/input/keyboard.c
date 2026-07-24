@@ -1,4 +1,4 @@
-#include "bee.h"
+#include "wyrd.h"
 #include "keyboard.h"
 #include "arch/i686/irq.h"
 #include "arch/i686/io.h"

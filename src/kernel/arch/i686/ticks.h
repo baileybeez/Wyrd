@@ -1,5 +1,5 @@
 #pragma once
-#include "bee.h"
+#include "wyrd.h"
 
 void ticksInit(u32 hz);
 u32  ticksGetCount();

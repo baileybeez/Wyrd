@@ -1,4 +1,4 @@
-#include "bee.h"
+#include "wyrd.h"
 #include "idt.h"
 #include "gdt.h"
 

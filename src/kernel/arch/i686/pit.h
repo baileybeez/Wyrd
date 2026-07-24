@@ -1,5 +1,5 @@
 #pragma once
-#include "bee.h"
+#include "wyrd.h"
 
 #define kPitBaseFrequency  1193182
 #define kPitChannel0Data   0x40

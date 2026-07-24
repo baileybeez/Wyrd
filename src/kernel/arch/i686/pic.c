@@ -1,4 +1,4 @@
-#include "bee.h"
+#include "wyrd.h"
 #include "pic.h"
 #include "arch/i686/io.h"
 
