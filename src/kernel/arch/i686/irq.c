@@ -68,10 +68,7 @@ void irqDispatch(Registers* regs)
 {
    u32 irq = regs->intNo - kIrqBase;
 
-   if (irq < kIrqCount && _handlers[irq] != nil)
-   {
-      _handlers[irq](regs);
-   }
-
    picSendEoi((u8)irq);
+   if (irq < kIrqCount && _handlers[irq] != nil)
+      _handlers[irq](regs);
 }
