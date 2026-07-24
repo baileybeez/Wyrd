@@ -1,5 +1,5 @@
 #pragma once
-#include "bee.h"
+#include "wyrd.h"
 
 #define kHeapVirtualStart  0xD0000000
 #define kHeapInitialSize   (64 * 1024)

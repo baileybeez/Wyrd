@@ -3,9 +3,9 @@
 #  Usage: qemu [cd/disk] [image] [debug]
 # 
 #  Examples: 
-#     qemu.ps1 cd build/bee.iso 
-#     qemu.ps1 cd build/bee.iso debug
-#     qemu.ps1 disk build/bee.img debug 
+#     qemu.ps1 cd build/wyrd.iso 
+#     qemu.ps1 cd build/wyrd.iso debug
+#     qemu.ps1 disk build/wyrd.img debug 
 
 if ($args.Length -lt 2) {
    Write-Host "Usage: qemu.ps1 <cd|disk> <image-path> [debug]"

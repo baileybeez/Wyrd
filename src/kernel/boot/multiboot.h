@@ -1,5 +1,5 @@
 #pragma once
-#include "bee.h"
+#include "wyrd.h"
 #include "bootInfo.h"
 
 #define kMultibootMagic 0x36D76289

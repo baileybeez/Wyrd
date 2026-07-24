@@ -1,4 +1,4 @@
-#include "bee.h"
+#include "wyrd.h"
 #include "vga.h"
 #include "lib/kprintf.h"
 #include <stdarg.h>

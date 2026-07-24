@@ -1,4 +1,4 @@
-#include "bee.h"
+#include "wyrd.h"
 #include "./arch/i686/gdt.h"
 #include "./arch/i686/idt.h"
 #include "./arch/i686/irq.h"
@@ -178,7 +178,7 @@ void kernelBootstrap(u32 magic, u32 ptr)
 {
    serialInit();
    logInit(kLogInfo, kLogTrace);
-   kTrace("Preparing BeeOS ...");
+   kTrace("Preparing the Wyrd ...");
    kTrace("[BOOT] magic=%x, ptr=%x", magic, ptr);
 
    BootInfo* bi = (BootInfo*)kBootInfoAddr;

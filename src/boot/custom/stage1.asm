@@ -36,7 +36,7 @@ ORG 0x7C00
    jmp   short start
    nop
 ; BIOS Parameter Block (FAT16, 10 MB fixed disk)
-bpb_OEMName:         db "BEEBOOT "                 ; 8 bytes @ 0x03
+bpb_OEMName:         db "WYRDBOOT"                 ; 8 bytes @ 0x03
 bpb_BytsPerSec:      dw 512                        ; 0x0B
 bpb_SecPerClus:      db 1                          ; 0x0D
 bpb_RsvdSecCnt:      dw 1 + kStage2Sectors         ; 0x0E - stage1 + stage2
@@ -53,7 +53,7 @@ bs_DrvNum:           db 0x80                       ; 0x24 - fixed disk conventio
 bs_Reserved1:        db 0                          ; 0x25
 bs_BootSig:          db 0x29                       ; 0x26
 bs_VolID:            dd 0xB0EB0EB0                 ; 0x27
-bs_VolLab:           db "BEE OS     "              ; 11 bytes @ 0x2B
+bs_VolLab:           db "WYRD       "              ; 11 bytes @ 0x2B
 bs_FilSysType:       db "FAT16   "                 ; 8  bytes @ 0x36
                                                    ; code starts @ 0x3E
 

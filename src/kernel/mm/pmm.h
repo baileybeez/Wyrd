@@ -1,5 +1,5 @@
 #pragma once
-#include "bee.h"
+#include "wyrd.h"
 #include "../boot/bootInfo.h"
 
 #define kFrameSize         4096

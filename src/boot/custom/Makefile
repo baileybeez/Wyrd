@@ -16,9 +16,9 @@ STAGE2_BIN		:= $(CUSTOM_BUILD)/stage2.bin
 KERNEL_BIN		:= $(BUILD_DIR)/kernel/kernel.bin
 
 DISK_SIZE_MB	:= 10
-DISK_IMAGE		:= $(BUILD_DIR)/bee.img
+DISK_IMAGE		:= $(BUILD_DIR)/wyrd.img
 VOLUME_ID		:= B0EB0EB0
-VOLUME_NAME		:= "BEE OS"
+VOLUME_NAME		:= "WYRD"
 VOLUME_FLAGS	:= -t 21 -h 16 -s 63 -c 1 -R 17 -r 32 -M 512 
 
 STAGE2_MAX		:= 8192

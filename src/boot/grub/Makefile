@@ -9,7 +9,7 @@ GRUB_CFG_SRC := $(CURDIR)/grub.cfg
 
 GRUB_BUILD   := $(BUILD_DIR)/grub
 ISO_DIR      := $(GRUB_BUILD)/iso
-ISO_OUT      := $(BUILD_DIR)/bee.iso
+ISO_OUT      := $(BUILD_DIR)/wyrd.iso
 
 KERNEL_ELF   := $(BUILD_DIR)/kernel/kernel.elf
 
