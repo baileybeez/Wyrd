@@ -20,4 +20,3 @@ typedef struct Thread {
 
 Thread*  threadBootstrap();
 Thread*  threadCreate(ThreadEntry entry);
-void     threadYield(Thread* prev, Thread* next);

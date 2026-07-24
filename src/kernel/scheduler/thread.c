@@ -1,5 +1,6 @@
 #include "wyrd.h"
 #include "thread.h"
+#include "scheduler.h"
 #include "mm/heap.h"
 #include "lib/logger.h"
 
@@ -57,29 +58,21 @@ Thread* threadCreate(ThreadEntry entry)
    // layout, high -> low:
    //    [top - 4]   _threadExit    handler if entry() returns
    //    [top - 8]   entry          switchContext's RET pops this into EIP
-   //    [top - 12]  0              ebp
-   //    [top - 16]  0              ebx
-   //    [top - 20]  0              esi
-   //    [top - 24]  0              edi   <- savedEso should point here
+   //    [top - 12]  0x202          popfd pops this into EFLAGS (IF=1)
+   //    [top - 16]  0              ebp
+   //    [top - 20]  0              ebx
+   //    [top - 24]  0              esi
+   //    [top - 28]  0              edi   <- savedEso should point here
    u32* sp = (u32*)(stack + kThreadStackSize);
    *(--sp) = (u32)_threadExit;
    *(--sp) = (u32)entry;
-   *(--sp) = (u32)0;
-   *(--sp) = (u32)0;
-   *(--sp) = (u32)0;
-   *(--sp) = (u32)0;
+   *(--sp) = 0x202;           // EFLAGS: IF=1, reserved but 1 set
+   *(--sp) = (u32)0;          // ebp
+   *(--sp) = (u32)0;          // ebx
+   *(--sp) = (u32)0;          // esi
+   *(--sp) = (u32)0;          // edi
    t->savedEsp = (u32)sp;
+   schedulerEnqueue(t);
 
    return t;
-}
-
-void threadYield(Thread* prev, Thread* next)
-{
-   if (prev == next)
-      return;
-
-   prev->state = kThreadState_Ready;
-   next->state = kThreadState_Running;
-
-   switchContext(&prev->savedEsp, next->savedEsp);
 }

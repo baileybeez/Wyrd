@@ -13,6 +13,7 @@ section .text
 global switchContext
 
 switchContext:
+   pushfd                     ; save EFLAGS
    push  ebp
    push  ebx
    push  esi
@@ -23,16 +24,18 @@ switchContext:
    ;   [esp +  4]  esi
    ;   [esp +  8]  ebx
    ;   [esp + 12]  ebp
-   ;   [esp + 16]  return address
-   ;   [esp + 20]  oldEspSlot   (arg 0)
-   ;   [esp + 24]  newEsp       (arg 1)
+   ;   [esp + 16]  eflags
+   ;   [esp + 20]  return address
+   ;   [esp + 24]  oldEspSlot   (arg 0)
+   ;   [esp + 28]  newEsp       (arg 1)
 
-   mov   eax, [esp + 20]      ; eax = oldEspSlot
+   mov   eax, [esp + 24]      ; eax = oldEspSlot
    mov   [eax], esp           ; *oldEspSlot = esp
-   mov   esp, [esp + 24]      ; esp = newEsp
+   mov   esp, [esp + 28]      ; esp = newEsp
 
    pop   edi
    pop   esi
    pop   ebx
    pop   ebp
+   popfd                      ; restore flags
    ret
