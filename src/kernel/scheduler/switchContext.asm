@@ -8,6 +8,12 @@
 ; Caller-saved regs (eax, ecx, edx) don't need preservation across a cdecl call.
 ; EFLAGS is inherited from the current context — if you yield with interrupts
 ; enabled, the new thread starts with interrupts enabled.
+;
+; savedEsp points at the top of a thread's kernel stack at the moment it stopped 
+; running. For a cooperatively-yielded thread, that top holds callee-saved 
+; regs + eflags + a return address into schedule. For a preempted thread, the 
+; same thing sits on top of a full interrupt frame further down the stack - that
+; frame is consumed by iret when the eventual unwinding through the ISR path completes.
 
 section .text
 global switchContext

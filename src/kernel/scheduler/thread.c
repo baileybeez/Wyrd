@@ -5,6 +5,7 @@
 #include "lib/logger.h"
 
 #define kThreadStackSize 16384
+#define kInitialEflags   0x202
 
 extern void switchContext(u32* oldEspSlot, u32 nextEsp);
 extern u8 stack_bottom[];
@@ -38,7 +39,7 @@ Thread* threadCreate(ThreadEntry entry)
 {
    Thread* t = kmalloc(sizeof(Thread));
    if (t == nil)
-      kPanic("threadBootstrap: kmalloc failed");
+      kPanic("threadCreate: kmalloc failed");
 
    u8* stack = kmalloc(kThreadStackSize);
    if (stack == nil) {
@@ -62,11 +63,11 @@ Thread* threadCreate(ThreadEntry entry)
    //    [top - 16]  0              ebp
    //    [top - 20]  0              ebx
    //    [top - 24]  0              esi
-   //    [top - 28]  0              edi   <- savedEso should point here
+   //    [top - 28]  0              edi   <- savedEsp should point here
    u32* sp = (u32*)(stack + kThreadStackSize);
    *(--sp) = (u32)_threadExit;
    *(--sp) = (u32)entry;
-   *(--sp) = 0x202;           // EFLAGS: IF=1, reserved but 1 set
+   *(--sp) = kInitialEflags;  // EFLAGS: IF=1, reserved bit 1 set
    *(--sp) = (u32)0;          // ebp
    *(--sp) = (u32)0;          // ebx
    *(--sp) = (u32)0;          // esi

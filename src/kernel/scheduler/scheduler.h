@@ -5,3 +5,4 @@
 void schedulerInit();
 void schedulerEnqueue(Thread* t);
 void schedule();
+void yield();

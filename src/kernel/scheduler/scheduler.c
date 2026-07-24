@@ -2,7 +2,7 @@
 #include "scheduler.h"
 #include "thread.h"
 
-// Scheduler is currently a round-robyn
+// Scheduler is currently a round-robin
 //
 // a circular linked list maintains the queue
 
@@ -87,3 +87,5 @@ void schedulerEnqueue(Thread* t)
    _enqueue(t);
    irqRestore(flags);
 }
+
+void yield() { schedule(); }
