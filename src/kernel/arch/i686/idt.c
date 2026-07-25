@@ -32,6 +32,8 @@ extern void isr24(); extern void isr25(); extern void isr26(); extern void isr27
 extern void isr28(); extern void isr29(); extern void isr30(); extern void isr31(); 
 extern void isrDefault();
 
+extern void isr128();
+
 void idtSetGate(u8 num, u32 base, u16 selector, u8 flags)
 {
    _idtEntries[num].baseLow  = base & 0xFFFF;
@@ -82,6 +84,8 @@ void idtInit()
    idtSetGate(29, (u32)isr29, kGDT_KernelCodeSelector, 0x8E);
    idtSetGate(30, (u32)isr30, kGDT_KernelCodeSelector, 0x8E);
    idtSetGate(31, (u32)isr31, kGDT_KernelCodeSelector, 0x8E);
+
+   idtSetGate(0x80, (u32)isr128, kGDT_KernelCodeSelector, 0xEE);
 
    idtFlush((u32)&_idtDescriptor);
 }
