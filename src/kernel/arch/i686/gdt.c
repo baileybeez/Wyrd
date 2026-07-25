@@ -22,7 +22,17 @@ static GDTDescriptor _gdtDescriptor;
 
 extern void gdtFlush(u32 gdtAddr);
 
-void _setGdtEntry(u32 entry, u32 base, u32 limit, u8 access, u8 granularity);
+void _setGdtEntry(u32 entry, u32 base, u32 limit, u8 access, u8 granularity)
+{
+   _gdtEntries[entry].baseLow  = base & 0xFFFF;
+   _gdtEntries[entry].baseMid  = (base >> 16) & 0xFF;
+   _gdtEntries[entry].baseHigh = (base >> 24) & 0xFF;
+
+   _gdtEntries[entry].limit       = (limit & 0xFFFF);
+   _gdtEntries[entry].granularity = ((limit >> 16) & 0x0F) | (granularity & 0xF0);
+
+   _gdtEntries[entry].access = access;
+}
 
 void gdtInit()
 {
@@ -38,14 +48,7 @@ void gdtInit()
    gdtFlush((u32)&_gdtDescriptor);
 }
 
-void _setGdtEntry(u32 entry, u32 base, u32 limit, u8 access, u8 granularity)
+void gdtInstallTss(u32 base, u32 limit)
 {
-   _gdtEntries[entry].baseLow  = base & 0xFFFF;
-   _gdtEntries[entry].baseMid  = (base >> 16) & 0xFF;
-   _gdtEntries[entry].baseHigh = (base >> 24) & 0xFF;
-
-   _gdtEntries[entry].limit       = (limit & 0xFFFF);
-   _gdtEntries[entry].granularity = ((limit >> 16) & 0x0F) | (granularity & 0xF0);
-
-   _gdtEntries[entry].access = access;
+   _setGdtEntry(kGDT_TssSelector >> 3, base, limit, 0x89, 0x00);
 }
