@@ -51,7 +51,7 @@ void stage2Main(u32 bootDrive)
 
    Fat16Volume vol;
    Fat16Error  err = fat16Mount(&vol, ataReadSectors, kFatBufferAddr, 0x10000, kRootDirBufferAddr, 0x4000);
-   if (err != kFAT16_OK) {
+   if (err != kFatErr_OK) {
       serialPrintf("[FAT] mount err=%d", err);
       goto halt;
    }
@@ -62,14 +62,14 @@ void stage2Main(u32 bootDrive)
    u16 firstCluster;
    u32 fileSize;
    err = fat16FindFile(&vol, kKernelFilename, &firstCluster, &fileSize);
-   if (err != kFAT16_OK) {
+   if (err != kFatErr_OK) {
       serialPrintf("[FAT] findFile err=%d", err);
       goto halt;
    }
    serialPrintf("[FAT] KERNEL.BIN cluster=%d size=%d\n", firstCluster, fileSize);
 
    err = fat16ReadFile(&vol, firstCluster, fileSize, (void*)kKernelLoadAddr);
-   if (err != kFAT16_OK) {
+   if (err != kFatErr_OK) {
       serialPrintf("[FAT] readFile err=%d", err);
       goto halt;
    }
