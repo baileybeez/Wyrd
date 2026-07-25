@@ -14,6 +14,7 @@ ASM_SRCS := entry.asm \
 			arch/i686/irq_stubs.asm \
 			scheduler/switchContext.asm 
 C_SRCS   := main.c \
+			syscall.c \
 			drivers/serial/serial.c \
 			drivers/video/vga.c \
 			drivers/input/keyboard.c \
@@ -21,14 +22,17 @@ C_SRCS   := main.c \
 			lib/kprintf.c \
 			lib/logger.c \
 			lib/mem.c \
+			arch/i686/arch.c \
 			arch/i686/gdt.c \
 			arch/i686/idt.c \
+			arch/i686/irq.c \
 			arch/i686/isr.c \
 			arch/i686/pic.c \
 			arch/i686/pit.c \
-			arch/i686/irq.c \
 			arch/i686/paging.c \
+			arch/i686/syscallEntry.c \
 			arch/i686/ticks.c \
+			arch/i686/tss.c \
 			boot/multiboot.c \
 			boot/bootInfo.c \
 			mm/pmm.c \
