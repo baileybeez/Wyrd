@@ -23,3 +23,5 @@ typedef unsigned char  bool;
 
 #define kLowHighToU64(high, low) (u64)(((u64)high << 16) | low)
 #define kHalt()                  for(;;) { __asm__ volatile("cli; hlt;"); }
+
+#define kUnused(x)   (void)x

@@ -1,5 +1,6 @@
 #include "wyrd.h"
 #include "isr.h"
+#include "idt.h"
 #include "drivers/serial/serial.h"
 
 #define kPageFault 14
@@ -32,7 +33,7 @@ static const char* kExceptionMessages[32] = {
     /* 30 */ "Reserved",   /* 31 */ "Reserved"
 };
 
-static IsrHandler _isrHandlers[32] = { nil };
+static IsrHandler _isrHandlers[kIDTEntryCount] = { nil };
 
 static void _dumpRegisters(Registers* regs, const char* name)
 {
@@ -49,7 +50,6 @@ static void _dumpRegisters(Registers* regs, const char* name)
       serialPrintf("  CR2=%08x\n", cr2);
    }
    serialPrintf("--- HALTED ---\n");
-
 }
 
 void isrHandler(Registers* regs)
@@ -58,7 +58,7 @@ void isrHandler(Registers* regs)
    if (fnc == nil) {
       const char* name = (regs->intNo < 32) ? kExceptionMessages[regs->intNo] : "Unexpected Interrupt";
       _dumpRegisters(regs, name);
-      for(;;) { __asm__ volatile("cli; hlt"); }
+      kHalt();
    }
 
    fnc(regs);
@@ -66,6 +66,5 @@ void isrHandler(Registers* regs)
 
 void isrRegister(u8 vector, IsrHandler handler)
 {
-   if (vector <32)
-      _isrHandlers[vector] = handler;
+   _isrHandlers[vector] = handler;
 }

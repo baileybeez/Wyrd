@@ -65,7 +65,7 @@ While any virtual machine should suffice in running/testing Wyrd, development an
 7. <s>Paging enabled, kernel in higher-half, kmalloc/kfree</s>
 8. <s>Custom Bootloader *Stage 1* 512-byte MBR that loads stage 2 from disk.</s>
 9. <s>Custom Bootloader *Stage 2* loads kernel from disk, init GDT, memory via E820, A20, protected mode</s>
-10. Two kernel threads visibly interleaving (scheduler, threads, and context switching)
+10. <s>Two kernel threads visibly interleaving (scheduler, threads, and context switching)</s>
 11. Ring 3 transition, first userspace program printing via syscall
 12. ATA PIO disk driver
 13. FAT16 read-only filesystem driver

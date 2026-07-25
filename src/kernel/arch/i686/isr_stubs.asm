@@ -25,7 +25,6 @@ isr%1:
 
 ; 0 - 31: per Intel SDM, 
 ; 8, 10, 11, 12, 13, 14, 17, 21 push error codes, the rest do not
-
 ISR_NOERR 0
 ISR_NOERR 1
 ISR_NOERR 2
@@ -58,6 +57,9 @@ ISR_NOERR 28
 ISR_NOERR 29
 ISR_NOERR 30
 ISR_NOERR 31
+
+; 0x80 (128) - syscall entry; reached via int 0x80 from ring 3 (gate DPL=3)
+ISR_NOERR 128
 
 ; default stub for any interrupt we haven't wired up specifically
 global isrDefault

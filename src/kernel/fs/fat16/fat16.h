@@ -3,15 +3,15 @@
 
 typedef enum
 {
-   kFAT16_OK             = 0,
-   kFAT16_DiskRead       = 1,
-   kFAT16_BadBPB         = 2,
-   kFAT16_FileNotFound   = 3,
-   kFAT16_BadCluster     = 4,
-   kFAT16_FatOverflow    = 5,
-   kFAT16_RootOverflow   = 6,
-   kFAT16_ShortRead      = 7,
-   kFAT16_BadName        = 8
+   kFatErr_OK             = 0,
+   kFatErr_DiskRead       = 1,
+   kFatErr_BadBPB         = 2,
+   kFatErr_FileNotFound   = 3,
+   kFatErr_BadCluster     = 4,
+   kFatErr_FatOverflow    = 5,
+   kFatErr_RootOverflow   = 6,
+   kFatErr_ShortRead      = 7,
+   kFatErr_BadName        = 8
 } Fat16Error;
 
 typedef bool (*kFat16ReadSectorsFn)(u32 lba, u8 count, void* dest);

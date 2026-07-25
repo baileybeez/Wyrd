@@ -1,21 +1,21 @@
 #include "wyrd.h"
-#include "./arch/i686/gdt.h"
-#include "./arch/i686/idt.h"
-#include "./arch/i686/irq.h"
-#include "./arch/i686/pic.h"
-#include "./arch/i686/paging.h"
-#include "./arch/i686/ticks.h"
-#include "./boot/bootInfo.h"
-#include "./boot/multiboot.h"
-#include "./drivers/input/keyboard.h"
-#include "./drivers/serial/serial.h"
-#include "./drivers/video/vga.h"
-#include "./lib/logger.h"
-#include "./lib/mem.h"
-#include "./mm/pmm.h"
-#include "./mm/heap.h"
-#include "./scheduler/thread.h"
-#include "./scheduler/scheduler.h"
+#include "arch/i686/arch.h"
+#include "arch/i686/paging.h"
+#include "arch/i686/pic.h"
+#include "arch/i686/syscallEntry.h"
+#include "arch/i686/ticks.h"
+#include "boot/bootInfo.h"
+#include "boot/multiboot.h"
+#include "drivers/input/keyboard.h"
+#include "drivers/serial/serial.h"
+#include "drivers/video/vga.h"
+#include "lib/logger.h"
+#include "lib/mem.h"
+#include "mm/pmm.h"
+#include "mm/heap.h"
+#include "scheduler/thread.h"
+#include "scheduler/scheduler.h"
+#include "syscall.h"
 
 extern u32 _kernelStart;
 extern u32 _kernelPhysicalEnd;
@@ -139,12 +139,7 @@ void kernelMain(BootInfo* bi)
    pmmDumpStats();
    // stressTestPMM();
    
-   gdtInit();
-   kTrace("+ GDT initialized.");
-   idtInit();
-   kTrace("+ IDT initialized.");
-   picRemap(kIrqBase, kIrqBase + 8);
-   irqInit();
+   archInitEarly();
 
    pagingInit();
    testPaging();
@@ -152,19 +147,23 @@ void kernelMain(BootInfo* bi)
    heapInit();
    testHeap();
    
-   ticksInit(100);
-   picClearMask(0);
-   __asm__ volatile("sti");
+   syscallInit();
+   archInitLate();
 
    keyboardInit();
    picClearMask(1);
 
    schedulerInit();
-   threadCreate(_demoA);
-   threadCreate(_demoB);
-   for (;;) __asm__ volatile("hlt");
-      
-   print("> ");
+   // threadCreate(_demoA);
+   // threadCreate(_demoB);
+
+   archEnableInterrupts();
+   //for (;;) __asm__ volatile("hlt");
+   
+   // syscall (sysWrite) test
+   const char* str = "Hello World\n";
+   i32 n = syscall3(kSys_Write, (u32)str, 12, 0);
+   kTrace("sys_write returned %d (excepted 11)", n);
 
    u32 prev = 0;
    while (true) {

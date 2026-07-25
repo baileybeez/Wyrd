@@ -56,6 +56,12 @@ void serialWriteString(const char* s)
    }
 }
 
+void serialWrite(const char* buf, u32 len)
+{
+   for (u32 i = 0; i < len ; i++)
+      serialWriteChar(buf[i]);
+}
+
 void serialPrintf(const char* fmt, ...)
 {
    va_list args;
