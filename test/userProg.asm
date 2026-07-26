@@ -1,15 +1,20 @@
 [bits 32]
-[org 0x00401000]              ; blob is mapped here; string address resolves correctly
+[org 0x00401000]
+
+kSysWrite equ 1
 
 _start:
-   mov   eax, 1               ; kSys_Write
-   mov   ebx, msg             ; pointer - absolute, correct because of [org]
-   mov   ecx, msg_len         ; length
-   xor   edx, edx
+   mov   eax, kSysWrite
+   mov   ebx, msg
+   mov   ecx, msgLen
    int   0x80
 
-.hang:
-   jmp   .hang                ; relative jump, spin forever
+   mov   ecx, 0x02000000
+.delay:
+   dec   ecx
+   jnz   .delay
 
-msg:      db "Hello from ring 3!", 0x0A
-msg_len:  equ $ - msg
+   jmp   _start
+
+msg:    db "ring3 tick", 10
+msgLen  equ $ - msg
