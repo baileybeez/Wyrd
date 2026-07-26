@@ -15,3 +15,4 @@ bool pagingMapPage(u32 virtualAddr, u32 physicalAddr, u32 flags);
 bool pagingUnmapPage(u32 virtualAddr);
 u32  pagingGetPhysical(u32 virtualAddr);
 void pagingInvalidatePage(u32 virtualAddr);
+void pagingTestUserMapping();

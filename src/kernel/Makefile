@@ -10,6 +10,7 @@ OBJ_DIR        := $(KERNEL_BUILD)/obj
 # explicit source lists
 ASM_SRCS := entry.asm \
 			arch/i686/descriptor_tables.asm \
+			arch/i686/enterUserMode.asm \
 			arch/i686/isr_stubs.asm \
 			arch/i686/irq_stubs.asm \
 			scheduler/switchContext.asm 
@@ -45,6 +46,7 @@ C_OBJS   := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SRCS))
 ASM_OBJS := $(patsubst %.asm,$(OBJ_DIR)/%.o,$(ASM_SRCS))
 OBJS     := $(ASM_OBJS) $(C_OBJS)
 DEPS     := $(C_OBJS:.o=.d)
+TEST_OBJ := /workspace/build/test/userProg.o
 
 LINKER_SCRIPT := $(KERNEL_SRC_DIR)/linker.ld
 
@@ -65,7 +67,7 @@ $(KERNEL_BIN): $(KERNEL_ELF)
 
 $(KERNEL_ELF): $(OBJS) $(LINKER_SCRIPT)
 	@mkdir -p $(dir $@)
-	$(TARGET_LD) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(TARGET_LD) $(LDFLAGS) -o $@ $(OBJS) $(TEST_OBJ) $(LIBS)
 
 $(OBJ_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c
 	@mkdir -p $(dir $@)

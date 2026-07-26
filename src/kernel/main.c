@@ -20,6 +20,48 @@
 extern u32 _kernelStart;
 extern u32 _kernelPhysicalEnd;
 
+extern char _binary_build_test_userProg_bin_start[];
+extern char _binary_build_test_userProg_bin_end[];
+extern void enterUserMode(u32 entry, u32 userStack);
+
+void spikeUserMode()
+{
+   const u32 blobVa  = 0x00401000;
+   const u32 stackVa = 0x00500000;
+
+   u32 blobLen = (u32)_binary_build_test_userProg_bin_end
+               - (u32)_binary_build_test_userProg_bin_start;
+
+   // --- blob page ---
+   u32 blobFrame = pmmAllocFrame();
+   if (blobFrame == kInvalidFrame) { kError("spike: no blob frame"); return; }
+
+   if (!pagingMapPage(blobVa, blobFrame, kPageFlag_Writable | kPageFlag_User)) {
+      kError("spike: blob map failed");
+      pmmFreeFrame(blobFrame);
+      return;
+   }
+   memcpy((void*)blobVa, _binary_build_test_userProg_bin_start, blobLen);
+
+   // --- user stack page ---
+   u32 stackFrame = pmmAllocFrame();
+   if (stackFrame == kInvalidFrame) { kError("spike: no stack frame"); return; }
+
+   if (!pagingMapPage(stackVa, stackFrame, kPageFlag_Writable | kPageFlag_User)) {
+      kError("spike: stack map failed");
+      pmmFreeFrame(stackFrame);
+      return;
+   }
+
+   u32 userStackTop = stackVa + kPageSize;
+
+   kTrace("spike: entering ring 3 at %x, stack %x (blob %d bytes)",
+          blobVa, userStackTop, blobLen);
+   enterUserMode(blobVa, userStackTop);
+
+   kError("spike: returned from enterUserMode — should never happen");
+}
+
 void stressTestPMM()
 {
    u32 a = pmmAllocFrame();
@@ -142,8 +184,9 @@ void kernelMain(BootInfo* bi)
    archInitEarly();
 
    pagingInit();
-   testPaging();
-
+   // testPaging();
+   // pagingTestUserMapping();
+   
    heapInit();
    testHeap();
    
@@ -159,7 +202,8 @@ void kernelMain(BootInfo* bi)
 
    archEnableInterrupts();
    //for (;;) __asm__ volatile("hlt");
-   
+   //spikeUserMode();
+
    // syscall (sysWrite) test
    const char* str = "Hello World\n";
    i32 n = syscall3(kSys_Write, (u32)str, 12, 0);
