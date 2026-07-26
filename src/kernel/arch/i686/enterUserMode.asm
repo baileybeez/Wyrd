@@ -1,4 +1,13 @@
 ; void enterUserMode(u32 entry, u32 userStack)
+;
+; per /arch/i686/gdt.h: 
+;     #define kGDT_UserCodeSelector    0x1B
+;     #define kGDT_UserDataSelector    0x23
+; 
+; per /scheduler/thread.c 
+;     #define kInitialEflags   0x202
+; 
+
 global enterUserMode
 enterUserMode:
    mov   eax, [esp + 4]      ; entry
