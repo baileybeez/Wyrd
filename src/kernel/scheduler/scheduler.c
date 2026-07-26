@@ -1,4 +1,5 @@
 #include "wyrd.h"
+#include "arch/i686/tss.h"
 #include "scheduler.h"
 #include "thread.h"
 
@@ -68,6 +69,7 @@ void schedule()
       _enqueue(prev);
       _current = next;
       next->state = kThreadState_Running;
+      tssSetKernelStack(next->stackBase + next->stackSize);
       switchContext(&prev->savedEsp, next->savedEsp);
    }
 

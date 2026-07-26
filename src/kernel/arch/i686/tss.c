@@ -38,6 +38,10 @@ typedef struct {
 static TSSEntry _tss;
 static u8       _ring0Stack[kRing0StackSize] __attribute__((aligned(16)));
 
+// this assignment of `_ring0Stack` is now vestigal for scheduled threads. it's 
+// only the pre-scheduler esp0. 
+// 
+// ** Every context switch reassigns it (see scheduler.c: `schedule()`)
 void tssInit()
 {
    memset((void*)&_tss, 0, sizeof(TSSEntry));

@@ -37,16 +37,21 @@ static u32* _pagingTable(u32 dirIndex)
    return (u32*)(kPagingTableRoot + (dirIndex * kPageSize));
 }
 
-static bool _pagingEnsureTable(u32 dirIndex)  // pmmAllocFrame + install PDE + zero via recursive window
+static bool _pagingEnsureTable(u32 dirIndex, u32 flags)
 {
-   if (g_kernelDirectory[dirIndex] & kPageFlag_Present)
+   u32 userBit = flags & kPageFlag_User;
+   if (g_kernelDirectory[dirIndex] & kPageFlag_Present) {
+      if (userBit && !(g_kernelDirectory[dirIndex] & kPageFlag_User))
+         g_kernelDirectory[dirIndex] |= kPageFlag_User;
+
       return true;
+   }
 
    u32 frame = pmmAllocFrame();
    if (frame == kInvalidFrame)
       return false;
 
-   g_kernelDirectory[dirIndex] = frame | kPageFlag_Present | kPageFlag_Writable;
+   g_kernelDirectory[dirIndex] = frame | kPageFlag_Present | kPageFlag_Writable | userBit;
 
    u32* table = _pagingTable(dirIndex);
    pagingInvalidatePage((u32)table);
@@ -87,7 +92,7 @@ bool pagingMapPage(u32 virtualAddr, u32 physicalAddr, u32 flags)
    u32 dirIndex   = virtualAddr >> 22;
    u32 tableIndex = (virtualAddr >> 12) & 0x3FF;
    
-   if (!_pagingEnsureTable(dirIndex))
+   if (!_pagingEnsureTable(dirIndex, flags))
       return false;
 
    u32* tbl = _pagingTable(dirIndex);
@@ -134,4 +139,50 @@ u32  pagingGetPhysical(u32 virtualAddr)
 void pagingInvalidatePage(u32 virtualAddr)
 {
    __asm__ volatile("invlpg (%0)" :: "r"(virtualAddr) : "memory");
+}
+
+void pagingTestUserMapping()
+{
+   const u32 scratchVa = 0x00400000;
+
+   u32 frame = pmmAllocFrame();
+   if (frame == kInvalidFrame)
+   {
+      kError("paging test: no free frame");
+      return;
+   }
+
+   if (!pagingMapPage(scratchVa, frame, kPageFlag_Writable | kPageFlag_User))
+   {
+      kError("paging test: map failed");
+      pmmFreeFrame(frame);
+      return;
+   }
+
+   u32 uDir = scratchVa >> 22;
+   u32 uTbl = (scratchVa >> 12) & 0x3FF;
+   u32 userPde = _pagingDirectory()[uDir];
+   u32 userPte = _pagingTable(uDir)[uTbl];
+
+   u32 kDir = kKernelVirtualBase >> 22;
+   u32 kTbl = (kKernelVirtualBase >> 12) & 0x3FF;
+   u32 kernPde = _pagingDirectory()[kDir];
+   u32 kernPte = _pagingTable(kDir)[kTbl];
+
+   kTrace("user   PDE=%x PTE=%x", userPde, userPte);
+   kTrace("kernel PDE=%x PTE=%x", kernPde, kernPte);
+
+   bool ok = true;
+   ok &= (userPde & kPageFlag_User) != 0;
+   ok &= (userPte & kPageFlag_User) != 0;
+   ok &= (kernPde & kPageFlag_User) == 0;
+   ok &= (kernPte & kPageFlag_User) == 0;
+
+   if (ok)
+      kTrace("paging test: U/S correct (user set, kernel clear)");
+   else
+      kError("paging test: U/S WRONG");
+
+   pagingUnmapPage(scratchVa);
+   pmmFreeFrame(frame);
 }

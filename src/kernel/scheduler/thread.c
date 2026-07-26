@@ -6,8 +6,11 @@
 
 #define kThreadStackSize 16384
 #define kInitialEflags   0x202
+#define kUserBootEflags  0x002
 
 extern void switchContext(u32* oldEspSlot, u32 nextEsp);
+extern void enterUserMode(u32 entry, u32 userStack);
+
 extern u8 stack_bottom[];
 extern u8 stack_top[];
 
@@ -68,6 +71,57 @@ Thread* threadCreate(ThreadEntry entry)
    *(--sp) = (u32)_threadExit;
    *(--sp) = (u32)entry;
    *(--sp) = kInitialEflags;  // EFLAGS: IF=1, reserved bit 1 set
+   *(--sp) = (u32)0;          // ebp
+   *(--sp) = (u32)0;          // ebx
+   *(--sp) = (u32)0;          // esi
+   *(--sp) = (u32)0;          // edi
+   t->savedEsp = (u32)sp;
+   schedulerEnqueue(t);
+
+   return t;
+}
+
+Thread* threadCreateUser(u32 entry, u32 userStackTop)
+{
+   Thread* t = kmalloc(sizeof(Thread));
+   if (t == nil)
+      kPanic("threadCreateUser: kmalloc failed");
+
+   u8* stack = kmalloc(kThreadStackSize);
+   if (stack == nil) {
+      kfree(t);
+      return nil;
+   }
+   
+   t->id        = getThreadId();
+   t->state     = kThreadState_Ready;
+   t->stackBase = (u32)stack;
+   t->stackSize = kThreadStackSize;
+   t->next      = nil;
+
+   // firts switchContext() 'ret's into enterUserMode, which finds 
+   // 'entry' and 'userStackTop' as its cdecl args and iret's into 
+   // Ring3 (consumed once)
+   // IF is left  clear so the brief ring-0 window inside 
+   // enterUserMode (segregs already user data) can't take an IRQ;
+   // the ring-3 iret sets IF
+   //
+   // layout, high -> low:
+   // [top -  4]  userStackTop    enterUserMode arg1  ([esp+8] after the ret)
+   // [top -  8]  entry           enterUserMode arg0  ([esp+4] after the ret)
+   // [top - 12]  _threadExit     enterUserMode's return slot — never taken (it iret's)
+   // [top - 16]  enterUserMode   switchContext's RET pops this into EIP
+   // [top - 20]  eflags          popfd
+   // [top - 24]  0  (ebp)
+   // [top - 28]  0  (ebx)
+   // [top - 32]  0  (esi)
+   // [top - 36]  0  (edi)   <- savedEsp
+   u32* sp = (u32*)(stack + kThreadStackSize);
+   *(--sp) = userStackTop;
+   *(--sp) = entry;
+   *(--sp) = (u32)_threadExit;
+   *(--sp) = (u32)enterUserMode;
+   *(--sp) = kUserBootEflags;
    *(--sp) = (u32)0;          // ebp
    *(--sp) = (u32)0;          // ebx
    *(--sp) = (u32)0;          // esi

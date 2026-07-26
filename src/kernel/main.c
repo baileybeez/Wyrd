@@ -16,6 +16,7 @@
 #include "scheduler/thread.h"
 #include "scheduler/scheduler.h"
 #include "syscall.h"
+#include "userProg.h"
 
 extern u32 _kernelStart;
 extern u32 _kernelPhysicalEnd;
@@ -124,6 +125,14 @@ void testHeap()
 static void _demoA() { for (;;) { serialWriteString("A"); } }
 static void _demoB() { for (;;) { serialWriteString("B"); } }
 
+static void _kernelCompanion()
+{
+   for (;;) {
+      kTrace("[kernel] tick");
+      for (volatile u32 i = 0; i < 0x02000000; ++i) { }
+   }
+}
+
 void kernelMain(BootInfo* bi)
 {
    vgaInit();
@@ -142,8 +151,9 @@ void kernelMain(BootInfo* bi)
    archInitEarly();
 
    pagingInit();
-   testPaging();
-
+   // testPaging();
+   // pagingTestUserMapping();
+   
    heapInit();
    testHeap();
    
@@ -158,8 +168,12 @@ void kernelMain(BootInfo* bi)
    // threadCreate(_demoB);
 
    archEnableInterrupts();
-   //for (;;) __asm__ volatile("hlt");
    
+   // TODO: spawn user Process and system thread
+   threadCreate(_kernelCompanion);
+   spawnUserThread();
+   for(;;);
+
    // syscall (sysWrite) test
    const char* str = "Hello World\n";
    i32 n = syscall3(kSys_Write, (u32)str, 12, 0);
