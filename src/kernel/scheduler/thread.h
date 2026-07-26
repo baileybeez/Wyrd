@@ -20,3 +20,4 @@ typedef struct Thread {
 
 Thread*  threadBootstrap();
 Thread*  threadCreate(ThreadEntry entry);
+Thread* threadCreateUser(u32 entry, u32 userStackTop);
