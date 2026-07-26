@@ -16,51 +16,10 @@
 #include "scheduler/thread.h"
 #include "scheduler/scheduler.h"
 #include "syscall.h"
+#include "userProg.h"
 
 extern u32 _kernelStart;
 extern u32 _kernelPhysicalEnd;
-
-extern char _binary_build_test_userProg_bin_start[];
-extern char _binary_build_test_userProg_bin_end[];
-extern void enterUserMode(u32 entry, u32 userStack);
-
-void spikeUserMode()
-{
-   const u32 blobVa  = 0x00401000;
-   const u32 stackVa = 0x00500000;
-
-   u32 blobLen = (u32)_binary_build_test_userProg_bin_end
-               - (u32)_binary_build_test_userProg_bin_start;
-
-   // --- blob page ---
-   u32 blobFrame = pmmAllocFrame();
-   if (blobFrame == kInvalidFrame) { kError("spike: no blob frame"); return; }
-
-   if (!pagingMapPage(blobVa, blobFrame, kPageFlag_Writable | kPageFlag_User)) {
-      kError("spike: blob map failed");
-      pmmFreeFrame(blobFrame);
-      return;
-   }
-   memcpy((void*)blobVa, _binary_build_test_userProg_bin_start, blobLen);
-
-   // --- user stack page ---
-   u32 stackFrame = pmmAllocFrame();
-   if (stackFrame == kInvalidFrame) { kError("spike: no stack frame"); return; }
-
-   if (!pagingMapPage(stackVa, stackFrame, kPageFlag_Writable | kPageFlag_User)) {
-      kError("spike: stack map failed");
-      pmmFreeFrame(stackFrame);
-      return;
-   }
-
-   u32 userStackTop = stackVa + kPageSize;
-
-   kTrace("spike: entering ring 3 at %x, stack %x (blob %d bytes)",
-          blobVa, userStackTop, blobLen);
-   enterUserMode(blobVa, userStackTop);
-
-   kError("spike: returned from enterUserMode — should never happen");
-}
 
 void stressTestPMM()
 {
@@ -166,6 +125,14 @@ void testHeap()
 static void _demoA() { for (;;) { serialWriteString("A"); } }
 static void _demoB() { for (;;) { serialWriteString("B"); } }
 
+static void _kernelCompanion()
+{
+   for (;;) {
+      kTrace("[kernel] tick");
+      for (volatile u32 i = 0; i < 0x02000000; ++i) { }
+   }
+}
+
 void kernelMain(BootInfo* bi)
 {
    vgaInit();
@@ -201,8 +168,11 @@ void kernelMain(BootInfo* bi)
    // threadCreate(_demoB);
 
    archEnableInterrupts();
-   //for (;;) __asm__ volatile("hlt");
-   //spikeUserMode();
+   
+   // TODO: spawn user Process and system thread
+   threadCreate(_kernelCompanion);
+   spawnUserThread();
+   for(;;);
 
    // syscall (sysWrite) test
    const char* str = "Hello World\n";

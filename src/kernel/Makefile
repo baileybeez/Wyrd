@@ -40,7 +40,8 @@ C_SRCS   := main.c \
 			mm/heap.c \
 			fs/fat16/fat16.c \
 			scheduler/thread.c \
-			scheduler/scheduler.c
+			scheduler/scheduler.c \
+			userProg.c 
 
 C_OBJS   := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SRCS))
 ASM_OBJS := $(patsubst %.asm,$(OBJ_DIR)/%.o,$(ASM_SRCS))
@@ -65,7 +66,7 @@ all: $(KERNEL_ELF) $(KERNEL_BIN)
 $(KERNEL_BIN): $(KERNEL_ELF)
 	$(TARGET_OBJCOPY) -O binary $< $@
 
-$(KERNEL_ELF): $(OBJS) $(LINKER_SCRIPT)
+$(KERNEL_ELF): $(OBJS) $(LINKER_SCRIPT) $(TEST_OBJ)
 	@mkdir -p $(dir $@)
 	$(TARGET_LD) $(LDFLAGS) -o $@ $(OBJS) $(TEST_OBJ) $(LIBS)
 
