@@ -51,11 +51,12 @@ TEST_OBJ := /workspace/build/test/userProg.o
 
 LINKER_SCRIPT := $(KERNEL_SRC_DIR)/linker.ld
 
-CFLAGS  := $(TARGET_CFLAGS)  -I$(KERNEL_SRC_DIR) -I$(COMMON_SRC_DIR) -MMD -MP
-CFLAGS  += -g3 -gdwarf-4 -O0 -fno-omit-frame-pointer
+FEATURES := -DkFAT16_DirListing 
+CFLAGS   := $(TARGET_CFLAGS) $(FEATURES) -I$(KERNEL_SRC_DIR) -I$(COMMON_SRC_DIR) -MMD -MP
+CFLAGS   += -g3 -gdwarf-4 -O0 -fno-omit-frame-pointer
 
-LDFLAGS := -T $(LINKER_SCRIPT) -nostdlib
-LIBS    := -lgcc
+LDFLAGS  := -T $(LINKER_SCRIPT) -nostdlib
+LIBS     := -lgcc
 
 KERNEL_ELF := $(KERNEL_BUILD)/kernel.elf
 KERNEL_BIN := $(KERNEL_BUILD)/kernel.bin

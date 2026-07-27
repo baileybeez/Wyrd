@@ -122,8 +122,8 @@ void testHeap()
    kTrace("growth alloc gave: %p at phys addr: 0x%x (expects > 0xD0000000)", p, phys);
 }
 
-static void _demoA() { for (;;) { serialWriteString("A"); } }
-static void _demoB() { for (;;) { serialWriteString("B"); } }
+// static void _demoA() { for (;;) { serialWriteString("A"); } }
+// static void _demoB() { for (;;) { serialWriteString("B"); } }
 
 static void _kernelCompanion()
 {
