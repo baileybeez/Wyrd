@@ -31,12 +31,22 @@
 #define kATA_SectorSize       512
 #define kATA_WordsPerSector   256
 
+#define kATA_MaxSectorsPerCmd 255
+#define kATA_Lba28Limit       0x10000000u
+
 static void ataDelay400ns()
 {
    inb(kATA_RegAltStatus);
    inb(kATA_RegAltStatus);
    inb(kATA_RegAltStatus);
    inb(kATA_RegAltStatus);
+}
+
+static void ataLogError(u32 lba)
+{
+   u8 status = inb(kATA_RegStatus);
+   u8 err    = inb(kATA_RegError);
+   serialPrintf("[ATA] read failed LBA=%x, status=%x, err=%x", lba, status, err);
 }
 
 static bool ataAwaitNotBusy()
@@ -60,22 +70,25 @@ static bool ataWaitDrq()
       if (status == 0xFF)
          return false;
 
-      if (!(status & kATA_StatusBusy) && (status & kATA_StatusDrq))
+      if (status & kATA_StatusBusy)
+         continue;
+
+      if (status & (kATA_StatusErr | kATA_StatusDf))
+         return false;
+
+      if (status & kATA_StatusDrq)
          return true;
    }
 
    return false;
 }
 
-bool ataReadSectors(u32 lba, u8 count, void* dest)
+static bool ataReadChunk(u32 lba, u8 count, void* dest)
 {
-   if (count == 0)
-      return true;
-   if ((lba >> 28) != 0)
+   if (!ataAwaitNotBusy()) {
+      ataLogError(lba);
       return false;
-
-   if (!ataAwaitNotBusy())
-      return false;
+   }
 
    outb(kATA_RegDriveHead, kATA_DriveMasterLba | ((lba >> 24) & 0x0F));
    ataDelay400ns();
@@ -86,17 +99,42 @@ bool ataReadSectors(u32 lba, u8 count, void* dest)
    outb(kATA_RegLbaHigh, (u8)((lba >> 16) & 0xFF));
  
    outb(kATA_RegCommand, kATA_CmdReadSectors);
- 
+
    u8* dst = (u8*)dest;
    for (u32 s = 0; s < count; s++) {
       if (!ataWaitDrq()) {
+         ataLogError(lba + s);
          return false;
       }
+
       insw(kATA_RegData, dst, kATA_WordsPerSector);
       dst += kATA_SectorSize;
       ataDelay400ns();
    }
- 
+
+   return true;
+}
+
+bool ataReadSectors(u32 lba, u32 count, void* dest)
+{
+   if (count == 0)
+      return true;
+   if ((lba >> 28) != 0)
+      return false;
+   if (count > (kATA_Lba28Limit - lba))
+      return false;
+
+   u8* dst = (u8*)dest;
+   while (count > 0) {
+      u8 chunk = (count > kATA_MaxSectorsPerCmd) ? kATA_MaxSectorsPerCmd : (u8)count;
+      if (!ataReadChunk(lba, chunk, dst))
+         return false;
+
+      lba += chunk;
+      dst += (u32)chunk * kATA_SectorSize;
+      count -= chunk;
+   }
+
    return true;
 
 }
