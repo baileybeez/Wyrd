@@ -67,7 +67,7 @@ While any virtual machine should suffice in running/testing Wyrd, development an
 9. <s>Custom Bootloader *Stage 2* loads kernel from disk, init GDT, memory via E820, A20, protected mode</s>
 10. <s>Two kernel threads visibly interleaving (scheduler, threads, and context switching)</s>
 11. <s>Ring 3 transition, first userspace program printing via syscall</s>
-12. ATA PIO disk driver
+12. <s>ATA PIO disk driver</s>
 13. FAT16 read-only filesystem driver
 14. ELF loader, first program loaded from disk executed in userspace
 15. In-kernel shell running programs from disk
