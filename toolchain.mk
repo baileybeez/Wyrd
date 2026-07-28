@@ -15,6 +15,11 @@ TOOLCHAIN_TARBALLS  := $(TOOLCHAIN_DIR)/tarballs
 TOOLCHAIN_PREFIX    := $(abspath $(TOOLCHAIN_DIR)/$(TARGET))
 TOOLCHAIN_BUILD_DIR := $(BUILD_DIR)/toolchain
 
+# macOS support for using system zlib
+ifeq ($(shell uname -s),Darwin)
+	ZLIB_CONFIG := --with-system-zlib
+endif
+
 # Put the cross-toolchain on PATH for this Make invocation and any sub-makes.
 export PATH := $(TOOLCHAIN_PREFIX)/bin:$(PATH)
 
@@ -25,7 +30,7 @@ GDB_INSTALLED 		:= $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-gdb
 
 .PHONY: toolchain toolchain_clean toolchain_binutils toolchain_gcc toolchain_gdb verify-toolchain
 
-toolchain: toolchain_binutils toolchain_gcc toolchain_gdb
+toolchain: toolchain_binutils toolchain_gcc
 
 toolchain_binutils: $(BINUTILS_INSTALLED)
 
@@ -74,7 +79,8 @@ $(BINUTILS_INSTALLED): $(TOOLCHAIN_DIR)/$(BINUTILS_VER)/.extracted
 	      --target=$(TARGET) \
 	      --with-sysroot \
 	      --disable-nls \
-	      --disable-werror
+	      --disable-werror \
+		  $(ZLIB_CONFIG)
 	$(MAKE) -j$(JOBS) -C $(TOOLCHAIN_BUILD_DIR)/binutils
 	$(MAKE) -C $(TOOLCHAIN_BUILD_DIR)/binutils install
 
@@ -87,7 +93,8 @@ $(GCC_INSTALLED): $(TOOLCHAIN_DIR)/$(GCC_VER)/.prereqs $(BINUTILS_INSTALLED)
 	      --target=$(TARGET) \
 	      --disable-nls \
 	      --enable-languages=c,c++ \
-	      --without-headers
+	      --without-headers \
+		  $(ZLIB_CONFIG)
 	$(MAKE) -j$(JOBS) -C $(TOOLCHAIN_BUILD_DIR)/gcc all-gcc all-target-libgcc
 	$(MAKE) -C $(TOOLCHAIN_BUILD_DIR)/gcc install-gcc install-target-libgcc
 
@@ -101,7 +108,8 @@ $(GDB_INSTALLED): $(TOOLCHAIN_DIR)/$(GDB_VER)/.extracted
 	      --disable-nls \
 	      --disable-werror \
 		  --with-system-readline \
-   	      --with-expat=yes
+   	      --with-expat=yes \
+		  $(ZLIB_CONFIG)
 	$(MAKE) -j$(JOBS) -C $(TOOLCHAIN_BUILD_DIR)/gdb
 	$(MAKE) -C $(TOOLCHAIN_BUILD_DIR)/gdb install
 	cp -r $(abspath $(TOOLCHAIN_DIR)/$(GDB_VER))/gdb/features \

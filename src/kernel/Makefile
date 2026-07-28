@@ -48,7 +48,7 @@ C_OBJS   := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SRCS))
 ASM_OBJS := $(patsubst %.asm,$(OBJ_DIR)/%.o,$(ASM_SRCS))
 OBJS     := $(ASM_OBJS) $(C_OBJS)
 DEPS     := $(C_OBJS:.o=.d)
-TEST_OBJ := /workspace/build/tests/userProg.o
+TEST_OBJ := $(BUILD_DIR)/tests/userProg.o
 
 LINKER_SCRIPT := $(KERNEL_SRC_DIR)/linker.ld
 
