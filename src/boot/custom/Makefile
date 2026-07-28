@@ -28,7 +28,8 @@ STAGE2_C       	:= main.c
 SHARED_C		:= $(KERNEL_SRC)/drivers/ata/ata.c \
 				   $(KERNEL_SRC)/drivers/serial/serial.c \
 				   $(KERNEL_SRC)/lib/kprintf.c \
-				   $(KERNEL_SRC)/fs/fat16/fat16.c \
+				   $(KERNEL_SRC)/lib/mem.c \
+				   $(KERNEL_SRC)/fs/fat16/fat16.c 
 
 STAGE2_OBJDIR	:= $(CUSTOM_BUILD)/objs
 
