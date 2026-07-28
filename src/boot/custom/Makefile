@@ -28,7 +28,8 @@ STAGE2_C       	:= main.c
 SHARED_C		:= $(KERNEL_SRC)/drivers/ata/ata.c \
 				   $(KERNEL_SRC)/drivers/serial/serial.c \
 				   $(KERNEL_SRC)/lib/kprintf.c \
-				   $(KERNEL_SRC)/fs/fat16/fat16.c \
+				   $(KERNEL_SRC)/lib/mem.c \
+				   $(KERNEL_SRC)/fs/fat16/fat16.c 
 
 STAGE2_OBJDIR	:= $(CUSTOM_BUILD)/objs
 
@@ -53,6 +54,9 @@ $(DISK_IMAGE): $(STAGE1_BIN) $(STAGE2_BIN) $(KERNEL_BIN)
 	dd if=$(STAGE1_BIN) of=$@ bs=1 count=450 skip=62 seek=62 conv=notrunc
 	dd if=$(STAGE2_BIN) of=$@ bs=512 seek=1  conv=notrunc
 	mcopy -i $@ $(BUILD_DIR)/kernel/kernel.bin ::/KERNEL.BIN
+	echo "hello from /tmp/file.txt via fat16" > file.txt
+	mmd   -i $(DISK_IMAGE) ::/tmp
+	mcopy -i $(DISK_IMAGE) file.txt ::/tmp/file.txt
 
 $(STAGE1_BIN): $(CUSTOM_SRC)/stage1.asm
 	@mkdir -p $(dir $@)

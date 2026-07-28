@@ -5,6 +5,6 @@
 
 bool ataReadSectors(u32 lba, u32 count, void* dest);
 
-#ifdef kATA_SelfTest
+#ifdef kIncludeSelfTests
 void ataSelfTest();
 #endif

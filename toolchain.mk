@@ -108,10 +108,10 @@ $(GDB_INSTALLED): $(TOOLCHAIN_DIR)/$(GDB_VER)/.extracted
 	      $(TOOLCHAIN_PREFIX)/share/gdb/
 
 # - verify toolchain, builds a sample app and confirms bin format
-VERIFY_OBJ := $(BUILD_DIR)/test/helloworld.o
+VERIFY_OBJ := $(BUILD_DIR)/tests/helloworld.o
 
 verify-toolchain: $(GCC_INSTALLED)
-	@mkdir -p $(BUILD_DIR)/test
+	@mkdir -p $(BUILD_DIR)/tests/
 	@echo "==> Compiling $(TEST_DIR)/helloworld.c with $(TARGET_CC)"
 	$(TARGET_CC) -ffreestanding -c $(TEST_DIR)/helloworld.c -o $(VERIFY_OBJ)
 	@echo ""

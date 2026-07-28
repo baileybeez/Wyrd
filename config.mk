@@ -2,7 +2,7 @@
 
 export BUILD_DIR := $(abspath build)
 export SRC_DIR   := $(abspath src)
-export TEST_DIR  := $(abspath test)
+export TEST_DIR  := $(abspath tests)
 
 JOBS ?= $(shell nproc)
 

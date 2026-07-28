@@ -16,10 +16,11 @@ ASM_SRCS := entry.asm \
 			scheduler/switchContext.asm 
 C_SRCS   := main.c \
 			syscall.c \
-			drivers/serial/serial.c \
-			drivers/video/vga.c \
+			drivers/ata/ata.c \
 			drivers/input/keyboard.c \
 			drivers/input/keyboardMap.c \
+			drivers/video/vga.c \
+			drivers/serial/serial.c \
 			lib/kprintf.c \
 			lib/logger.c \
 			lib/mem.c \
@@ -47,11 +48,11 @@ C_OBJS   := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SRCS))
 ASM_OBJS := $(patsubst %.asm,$(OBJ_DIR)/%.o,$(ASM_SRCS))
 OBJS     := $(ASM_OBJS) $(C_OBJS)
 DEPS     := $(C_OBJS:.o=.d)
-TEST_OBJ := /workspace/build/test/userProg.o
+TEST_OBJ := /workspace/build/tests/userProg.o
 
 LINKER_SCRIPT := $(KERNEL_SRC_DIR)/linker.ld
 
-FEATURES := -DkFAT16_DirListing 
+FEATURES := -DkIncludeSelfTests
 CFLAGS   := $(TARGET_CFLAGS) $(FEATURES) -I$(KERNEL_SRC_DIR) -I$(COMMON_SRC_DIR) -MMD -MP
 CFLAGS   += -g3 -gdwarf-4 -O0 -fno-omit-frame-pointer
 
