@@ -9,7 +9,7 @@ help:
 	@echo "Targets:"
 	@echo "  make toolchain           build binutils + GCC cross-compiler for $(TARGET)."
 	@echo "                              + override: 'JOBS=N' (parallelism, default: nproc)"
-	@echo "  make verify-toolchain    compile test/helloworld.c and confirm the toolchain"
+	@echo "  make verify-toolchain    compile tests/helloworld.c and confirm the toolchain"
 	@echo ""
 	@echo "  make kernel 			  build only the kernel"
 	@echo "  make grub-iso 		      builds an ISO using the GRUB bootloader"
