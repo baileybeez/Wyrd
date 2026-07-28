@@ -54,6 +54,9 @@ $(DISK_IMAGE): $(STAGE1_BIN) $(STAGE2_BIN) $(KERNEL_BIN)
 	dd if=$(STAGE1_BIN) of=$@ bs=1 count=450 skip=62 seek=62 conv=notrunc
 	dd if=$(STAGE2_BIN) of=$@ bs=512 seek=1  conv=notrunc
 	mcopy -i $@ $(BUILD_DIR)/kernel/kernel.bin ::/KERNEL.BIN
+	echo "hello from /tmp/file.txt via fat16" > file.txt
+	mmd   -i $(DISK_IMAGE) ::/tmp
+	mcopy -i $(DISK_IMAGE) file.txt ::/tmp/file.txt
 
 $(STAGE1_BIN): $(CUSTOM_SRC)/stage1.asm
 	@mkdir -p $(dir $@)

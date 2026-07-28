@@ -6,9 +6,11 @@
 #include "arch/i686/ticks.h"
 #include "boot/bootInfo.h"
 #include "boot/multiboot.h"
+#include "drivers/ata/ata.h"
 #include "drivers/input/keyboard.h"
 #include "drivers/serial/serial.h"
 #include "drivers/video/vga.h"
+#include "fs/fat16/fat16.h"
 #include "lib/logger.h"
 #include "lib/mem.h"
 #include "mm/pmm.h"
@@ -20,6 +22,11 @@
 
 extern u32 _kernelStart;
 extern u32 _kernelPhysicalEnd;
+
+static Fat16Volume  g_Vol;
+static u8           g_FatBuffer[64 * 1024];
+static u8           g_RootDirBuffer[16 * 1024];
+
 
 void stressTestPMM()
 {
@@ -166,8 +173,22 @@ void kernelMain(BootInfo* bi)
    schedulerInit();
    // threadCreate(_demoA);
    // threadCreate(_demoB);
-
    archEnableInterrupts();
+
+#ifdef kIncludeSelfTests
+   // ATA
+   ataSelfTest();
+#endif
+
+   // FAT16
+   Fat16Error err = fat16Mount(&g_Vol, ataReadSectors, g_FatBuffer, sizeof g_FatBuffer, g_RootDirBuffer, sizeof g_RootDirBuffer);
+   if (err != kFatErr_OK) {
+      serialPrintf("[FAT16] mount failed: %x\n", err);
+#ifdef kIncludeSelfTests
+   } else {
+      fat16SelfTest(&g_Vol);
+#endif
+   }
    
    // TODO: spawn user Process and system thread
    threadCreate(_kernelCompanion);

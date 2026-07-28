@@ -408,3 +408,38 @@ Fat16Error fat16ReadFileRange(const Fat16Volume* vol, u16 firstCluster, u32 file
 
    return kFatErr_OK;
 }
+
+#ifdef kIncludeSelfTests
+#include "drivers/serial/serial.h"
+
+#define kFat16_SelfTestPath    "/tmp/file.txt"
+#define kFat16_SelfTestBufSize 512
+
+void fat16SelfTest(const Fat16Volume* vol)
+{
+   static u8 buffer[kFat16_SelfTestBufSize];
+
+   serialPrintf("[FAT16] selftest: resolving %s...\n", kFat16_SelfTestPath);
+
+   u16 cluster;
+   u32 size;
+   Fat16Error err = fat16FindFile(vol, kFat16_SelfTestPath, &cluster, &size);
+   if (err != kFatErr_OK) {
+      serialPrintf("[FAT16] selftest: FAIL - fat16FindFile returned %x\n", err);
+      return;
+   }
+
+   serialPrintf("[FAT16] found: firstCluster=%x size=%x bytes\n", cluster, size);
+
+   u32 toRead = min(size, (u32)(kFat16_SelfTestBufSize - 1));
+   err = fat16ReadFileRange(vol, cluster, size, 0, toRead, buffer);
+   if (err != kFatErr_OK) {
+      serialPrintf("[FAT16] selftest: FAIL - fat16ReadFileRange returned %x\n", err);
+      return;
+   }
+
+   buffer[toRead] = '\0';
+   serialPrintf("[FAT16] contents (%x bytes):\n%s\n", toRead, buffer);
+   serialPrintf("[FAT16] selftest: PASS\n");
+}
+#endif

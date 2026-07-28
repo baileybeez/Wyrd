@@ -40,3 +40,7 @@ Fat16Error fat16FindFile(const Fat16Volume* vol, const char* path, u16* outFirst
 Fat16Error fat16ReadFile(const Fat16Volume* vol, u16 firstCluster, u32 fileSize, void* dest);
 Fat16Error fat16ReadFileRange(const Fat16Volume* vol, u16 firstCluster, u32 fileSize,
                               u32 offset, u32 len, void* dest);
+
+#ifdef kIncludeSelfTests
+void fat16SelfTest(const Fat16Volume* vol);
+#endif
