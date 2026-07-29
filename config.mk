@@ -25,10 +25,10 @@ BINUTILS_VER := binutils-2.42
 BINUTILS_ZIP := $(BINUTILS_VER).tar.gz
 BINUTILS_URL := https://ftp.gnu.org/gnu/binutils/$(BINUTILS_ZIP)
 
-GCC_VER := gcc-13.2.0
+GCC_VER := gcc-13.3.0
 GCC_ZIP := $(GCC_VER).tar.gz
 GCC_URL := https://ftp.gnu.org/gnu/gcc/$(GCC_VER)/$(GCC_ZIP)
 
 GDB_VER 	:= gdb-14.2
-GDB_ZIP 	:= $(GDB_VER).tar.xz
+GDB_ZIP 	:= $(GDB_VER).tar.gz
 GDB_URL     := https://ftp.gnu.org/gnu/gdb/$(GDB_ZIP)

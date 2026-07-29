@@ -38,10 +38,12 @@ S2_ASM_OBJS 	:= $(patsubst %.asm,$(STAGE2_OBJDIR)/%.o,$(STAGE2_ASM))
 SHARED_OBJS		:= $(patsubst $(KERNEL_SRC)/%.c,$(STAGE2_OBJDIR)/shared/%.o,$(SHARED_C))
 STAGE2_OBJS		:= $(S2_ASM_OBJS) $(S2_C_OBJS) $(SHARED_OBJS)
 
+FEATURES		:= 
 CFLAGS			:= -m32 -ffreestanding -nostdlib -fno-pic -fno-stack-protector \
-                   -fno-builtin -Wall -Wextra -O2 -I $(INCLUDE_COMMON) -I $(KERNEL_SRC)
+                   -fno-builtin -Wall -Wextra -O2 $(FEATURES) -I $(INCLUDE_COMMON) -I $(KERNEL_SRC)
 
 LINKER_SCRIPT	:= $(CUSTOM_SRC)/linker.ld
+LIBS 			:= $(shell $(TARGET_CC) -print-libgcc-file-name)
 
 .PHONY: iso clean
 
@@ -69,7 +71,7 @@ $(STAGE1_BIN): $(CUSTOM_SRC)/stage1.asm
 
 $(STAGE2_BIN): $(STAGE2_OBJS) $(LINKER_SCRIPT)
 	@mkdir -p $(dir $@)
-	$(TARGET_LINKER) -T $(LINKER_SCRIPT) -o $@ $(STAGE2_OBJS)
+	$(TARGET_LINKER) -T $(LINKER_SCRIPT) -o $@ $(STAGE2_OBJS) $(LIBS)
 	@size=$$(stat -c%s $@); \
 	if [ $$size -gt $(STAGE2_MAX) ]; then \
 		echo "ERROR: stage2.bin is $$size bytes, exceeds $(STAGE2_MAX) budget"; \
