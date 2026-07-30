@@ -1,5 +1,6 @@
 #include "wyrd.h"
 #include "isr.h"
+#include "cpu.h"
 #include "idt.h"
 #include "drivers/serial/serial.h"
 

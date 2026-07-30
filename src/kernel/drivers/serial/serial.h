@@ -1,5 +1,6 @@
 #pragma once
-#include <stdarg.h>
+#include "wyrd.h"
+#include "args.h"
 
 bool serialInit();
 void serialWriteString(const char* s);

@@ -1,9 +1,9 @@
 #include "wyrd.h"
+#include "args.h"
 #include "arch/i686/io.h"
 #include "lib/kprintf.h"
 #include "serial.h"
 
-#include <stdarg.h>
 
 static const u16 kCom1Port       = 0x3F8;
 static const u8  kLineStatusTHR  = 0x20;
