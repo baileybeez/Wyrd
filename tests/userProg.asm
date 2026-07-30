@@ -26,8 +26,15 @@ _start:
    mov   ecx, 0
    int   0x80
 
+   ; sysExit should NEVER return to here
+   mov   eax, kSysWrite
+   mov   ebx, badMsg
+   mov   ecx, badLen
+   int   0x80
 .hang:
-   jmp   .hang             ; sysExit should NEVER return to here
+   jmp   .hang
 
 msg:    db "ring3 tick", 10
 msgLen  equ $ - msg
+badMsg: db "[sysExit returned]", 10
+badLen: equ $ - badMsg
