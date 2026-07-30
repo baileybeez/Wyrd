@@ -20,4 +20,3 @@ void logMessageV(LogLevel level, const char* fmt, va_list args);
 #define kInfo(...)  logMessage(kLogInfo,  __VA_ARGS__)
 #define kWarn(...)  logMessage(kLogWarn,  __VA_ARGS__)
 #define kError(...) logMessage(kLogError, __VA_ARGS__)
-#define kPanic(...) logMessage(kLogPanic, __VA_ARGS__)

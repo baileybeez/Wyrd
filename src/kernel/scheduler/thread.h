@@ -4,7 +4,8 @@
 typedef enum {
    kThreadState_Ready,
    kThreadState_Running,
-   kThreadState_Blocked
+   kThreadState_Blocked,
+   kThreadState_Terminated
 } ThreadState;
 
 typedef void (*ThreadEntry)(void);
@@ -20,4 +21,4 @@ typedef struct Thread {
 
 Thread*  threadBootstrap();
 Thread*  threadCreate(ThreadEntry entry);
-Thread* threadCreateUser(u32 entry, u32 userStackTop);
+Thread*  threadCreateUser(u32 entry, u32 userStackTop);
