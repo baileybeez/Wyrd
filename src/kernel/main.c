@@ -1,5 +1,6 @@
 #include "wyrd.h"
 #include "arch/i686/arch.h"
+#include "arch/i686/cpu.h"
 #include "arch/i686/paging.h"
 #include "arch/i686/pic.h"
 #include "arch/i686/syscallEntry.h"
@@ -13,6 +14,7 @@
 #include "fs/fat16/fat16.h"
 #include "lib/logger.h"
 #include "lib/mem.h"
+#include "lib/panic.h"
 #include "mm/pmm.h"
 #include "mm/heap.h"
 #include "scheduler/thread.h"
@@ -58,13 +60,13 @@ void testPaging()
    addr = pagingGetPhysical(0xC0100000);
    kTrace("getPhys(0xC0100000) returns 0x%x (expects 0x00100000)", addr);
    if (addr != 0x00100000)
-      kPanic("expected 0x00100000");
+      kernelPanic("expected 0x00100000");
 
    // test get phys addr returns invalid address when passed a bad request
    addr = pagingGetPhysical(0x00001000);
    kTrace("getPhys(0x00001000) returns 0x%x (expects 0xFFFFFFFF)", addr);
    if (addr != kInvalidPhysical)
-      kPanic("expected 0xFFFFFFFF");
+      kernelPanic("expected 0xFFFFFFFF");
 
    // Map / Write / Read round-trip test
    u32 frame = pmmAllocFrame();
@@ -173,7 +175,7 @@ void kernelMain(BootInfo* bi)
    schedulerInit();
    // threadCreate(_demoA);
    // threadCreate(_demoB);
-   archEnableInterrupts();
+   interruptsEnable();
 
 #ifdef kIncludeSelfTests
    // ATA
@@ -214,8 +216,7 @@ void kernelMain(BootInfo* bi)
    }
 
    // Halt
-   kPanic("- System Halted -");
-   kHalt();
+   kernelPanic("- System Halted -");
    return;
 }
 
@@ -238,8 +239,7 @@ void kernelBootstrap(u32 magic, u32 ptr)
       bi->bootDrive      = 0;
       multiboot2Parse(ptr, bi);
    } else {
-      kPanic("Unknown bootloader: %x", magic);
-      kHalt();
+      kernelPanic("Unknown bootloader: %x", magic);
    }
 
    kernelMain(bi);

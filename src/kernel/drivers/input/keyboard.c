@@ -1,5 +1,6 @@
 #include "wyrd.h"
 #include "keyboard.h"
+#include "arch/i686/cpu.h"
 #include "arch/i686/irq.h"
 #include "arch/i686/io.h"
 
@@ -50,14 +51,14 @@ static void _kbPush(char c)
 
 static bool _kbPop(char* out)
 {
-   __asm__ volatile("cli");
+   interruptsDisable();
    bool ok = false;
    if (g_buffer.head != g_buffer.tail) {
       *out = g_buffer.data[g_buffer.tail];
       g_buffer.tail = (g_buffer.tail + 1) & kBufMask;
       ok = true;
    }
-   __asm__ volatile("sti");
+   interruptsEnable();
    return ok;
 }
 

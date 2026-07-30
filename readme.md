@@ -9,7 +9,7 @@
 > This software is purely for educational purposes and far from complete. It will crash and is missing key features. Keep your expectations low.
 
 ## Summary
-Wyrd is a 32-bit operating system for x86 devices. The project goal is learning core concepts required to build and maintain a from-scratch operating system in ASM and C. It is a very barebones product, offering a serial console (for debugging), vga text support, basic FAT16 support via ATA, keyboard support, memory mapping, and virtual paging. 
+Wyrd is a 32-bit operating system for x86 devices. The project goal is learning core concepts required to build and maintain a from-scratch operating system in ASM and C. It is a very barebones product, offering a serial console (for debugging), vga text support, basic FAT16 support via ATA, keyboard support, memory mapping, virtual paging, and a pre-emptive scheduler. 
 
 ---
 
@@ -68,6 +68,6 @@ While any virtual machine should suffice in running/testing Wyrd, development an
 10. <s>Two kernel threads visibly interleaving (scheduler, threads, and context switching)</s>
 11. <s>Ring 3 transition, first userspace program printing via syscall</s>
 12. <s>ATA PIO disk driver</s>
-13. FAT16 read-only filesystem driver
+13. <s>FAT16 read-only filesystem driver</s>
 14. ELF loader, first program loaded from disk executed in userspace
 15. In-kernel shell running programs from disk

@@ -1,7 +1,6 @@
 #include "wyrd.h"
+#include "args.h"
 #include "kprintf.h"
-
-#include <stdarg.h>
 
 static const char kHexLower[] = "0123456789abcdef";
 

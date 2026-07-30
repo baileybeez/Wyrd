@@ -1,10 +1,11 @@
 #include "wyrd.h"
+#include "paging.h"
+#include "cpu.h"
 #include "lib/logger.h"
 #include "lib/mem.h"
 #include "mm/memory.h"
 #include "mm/pmm.h"
 #include "isr.h"
-#include "paging.h"
 
 #define kPagingDirectory   0xFFFFF000
 #define kPagingTableRoot   0xFFC00000

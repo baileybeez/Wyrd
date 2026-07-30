@@ -24,6 +24,7 @@ C_SRCS   := main.c \
 			lib/kprintf.c \
 			lib/logger.c \
 			lib/mem.c \
+			lib/panic.c \
 			arch/i686/arch.c \
 			arch/i686/gdt.c \
 			arch/i686/idt.c \

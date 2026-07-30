@@ -26,8 +26,3 @@ void archInitLate()
    ticksInit(100);
    picClearMask(0);
 }
-
-void archEnableInterrupts()
-{
-   __asm__ volatile("sti");
-}

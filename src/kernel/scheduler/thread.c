@@ -1,8 +1,10 @@
 #include "wyrd.h"
+#include "arch/i686/cpu.h"
 #include "thread.h"
 #include "scheduler.h"
 #include "mm/heap.h"
 #include "lib/logger.h"
+#include "lib/panic.h"
 
 #define kThreadStackSize 16384
 #define kInitialEflags   0x202
@@ -19,15 +21,14 @@ static inline u32 getThreadId() { return _nextThreadId++; }
 
 static void _threadExit()
 {
-   kPanic("thread returned from its entry function!");
-   kHalt();
+   kernelPanic("thread returned from its entry function!");
 }
 
 Thread* threadBootstrap()
 {
    Thread* t = kmalloc(sizeof(Thread));
    if (t == nil)
-      kPanic("threadBootstrap: kmalloc failed");
+      kernelPanic("threadBootstrap: kmalloc failed");
 
    t->id        = getThreadId();
    t->state     = kThreadState_Running;
@@ -42,7 +43,7 @@ Thread* threadCreate(ThreadEntry entry)
 {
    Thread* t = kmalloc(sizeof(Thread));
    if (t == nil)
-      kPanic("threadCreate: kmalloc failed");
+      kernelPanic("threadCreate: kmalloc failed");
 
    u8* stack = kmalloc(kThreadStackSize);
    if (stack == nil) {
@@ -85,7 +86,7 @@ Thread* threadCreateUser(u32 entry, u32 userStackTop)
 {
    Thread* t = kmalloc(sizeof(Thread));
    if (t == nil)
-      kPanic("threadCreateUser: kmalloc failed");
+      kernelPanic("threadCreateUser: kmalloc failed");
 
    u8* stack = kmalloc(kThreadStackSize);
    if (stack == nil) {

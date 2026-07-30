@@ -1,7 +1,7 @@
 #pragma once
 #include "wyrd.h"
+#include "args.h"
 #include "mm/memory.h"
-#include <stdarg.h>
 
 #define kVideoPhysMem      0xB8000
 #define kVideoMem          ((u16*)physToVirtual(kVideoPhysMem))

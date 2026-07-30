@@ -1,6 +1,7 @@
 #include "wyrd.h"
 #include "syscall.h"
 #include "drivers/serial/serial.h"
+#include "scheduler/scheduler.h"
 
 typedef i32 (*fncSyscall)(u32 a0, u32 a1, u32 a2);
 
@@ -11,10 +12,18 @@ static i32 _sysWrite(u32 ptr, u32 len, u32 unused)
    return (i32)len;
 }
 
+static i32 _sysExit(u32 code, u32 a1, u32 a2)
+{
+   kUnused(a1);
+   kUnused(a2);
+   schedulerExitThread((i32)code);
+}
+
 static fncSyscall _sysCalls[kSyscallCount] = 
 {
    [kSys_Read]    = nil, 
-   [kSys_Write]   = _sysWrite
+   [kSys_Write]   = _sysWrite,
+   [kSys_Exit]    = _sysExit
 };
 
 i32 syscallDispatch(u32 callId, u32 a0, u32 a1, u32 a2)

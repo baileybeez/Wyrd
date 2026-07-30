@@ -3,6 +3,7 @@
 #include "pmm.h"
 #include "heap.h"
 #include "lib/logger.h"
+#include "lib/panic.h"
 
 #define kHeapWalkLimit 2
 
@@ -73,7 +74,7 @@ void heapInit()
    for (u32 offset = 0; offset < kHeapInitialSize; offset += kPageSize) {
       u32 frame = pmmAllocFrame();
       if (frame == kInvalidFrame)
-         kPanic("unable to allocate initial heap frame %u", offset);
+         kernelPanic("unable to allocate initial heap frame %u", offset);
 
       pagingMapPage(kHeapVirtualStart + offset, frame, kPageFlag_Writable);
    }

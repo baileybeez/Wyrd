@@ -3,4 +3,3 @@
 
 void archInitEarly();
 void archInitLate();
-void archEnableInterrupts();

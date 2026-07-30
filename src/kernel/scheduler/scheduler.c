@@ -1,5 +1,8 @@
 #include "wyrd.h"
+#include "arch/i686/cpu.h"
 #include "arch/i686/tss.h"
+#include "lib/logger.h"
+#include "lib/panic.h"
 #include "scheduler.h"
 #include "thread.h"
 
@@ -47,16 +50,16 @@ static void _idle()
    }
 }
 
-static inline u32 irqSave(void)
+// Makes `next` the running current and switches into it, saving the
+// outgoing context into `prev`. Deliberately does NOT touch prev's
+// state or queue membership — the caller owns prev's lifecycle
+// (schedule() re-enqueues it Ready; schedulerExit() marks it Terminated).
+kNoReturn static inline void _swapContext(Thread* prev, Thread* next)
 {
-   u32 flags;
-   __asm__ volatile("pushf; pop %0; cli" : "=r"(flags) :: "memory");
-   return flags;
-}
-
-static inline void irqRestore(u32 flags)
-{
-   __asm__ volatile("push %0; popf" :: "r"(flags) : "memory", "cc");
+   _current = next;
+   next->state = kThreadState_Running;
+   tssSetKernelStack(next->stackBase + next->stackSize);
+   switchContext(&prev->savedEsp, next->savedEsp);
 }
 
 void schedule()
@@ -67,14 +70,13 @@ void schedule()
    Thread* next = _dequeue();
    if (next != nil) {
       _enqueue(prev);
-      _current = next;
-      next->state = kThreadState_Running;
-      tssSetKernelStack(next->stackBase + next->stackSize);
-      switchContext(&prev->savedEsp, next->savedEsp);
+      _swapContext(prev, next);
    }
 
    irqRestore(flags);
 }
+
+void schedulerYield() { schedule(); }
 
 void schedulerInit()
 {
@@ -90,4 +92,24 @@ void schedulerEnqueue(Thread* t)
    irqRestore(flags);
 }
 
-void yield() { schedule(); }
+Thread* schedulerCurrent()
+{
+   return _current;
+}
+
+kNoReturn void schedulerExitThread(i32 code)
+{
+   interruptsDisable();
+
+   kUnused(code);
+
+   Thread* dead = schedulerCurrent();
+   dead->state = kThreadState_Terminated;
+
+   Thread* next = _dequeue();
+   if (next == nil)
+      kernelPanic("scheulder: no runnable thread");
+   
+   _swapContext(dead, next);
+   kernelPanic("scheulder: returned from final switch");
+}

@@ -1,6 +1,5 @@
 #pragma once
-
-#include <stdarg.h>
+#include "args.h"
 
 typedef void (*CharSink)(char);
 

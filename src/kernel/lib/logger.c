@@ -1,8 +1,8 @@
 #include "wyrd.h"
+#include "args.h"
 #include "logger.h"
 #include "../drivers/video/vga.h"
 #include "../drivers/serial/serial.h"
-#include <stdarg.h>
 
 static LogLevel _minVgaLevel     = kLogInfo;
 static LogLevel _minSerialLevel  = kLogTrace;
@@ -41,16 +41,11 @@ void logInit(LogLevel minVgaLevel, LogLevel minSerialLevel)
 void logSetVgaLevel(LogLevel level)    { _minVgaLevel    = level; }
 void logSetSerialLevel(LogLevel level) { _minSerialLevel = level; }
 
-void logMessage(LogLevel level, const char* fmt, ...)
+void logMessageV(LogLevel level, const char* fmt, va_list args)
 {
    if (level >= _minSerialLevel) {
       serialPrintf("%s", _logLevelPrefix(level));
-
-      va_list args;
-      va_start(args, fmt);
       serialVprintf(fmt, args);
-      va_end(args);
-
       serialPrintf("\n");
    }
 
@@ -59,11 +54,15 @@ void logMessage(LogLevel level, const char* fmt, ...)
       if (level >= kLogWarn)
          printf("%s", _logLevelPrefix(level));
 
-      va_list args;
-      va_start(args, fmt);
       vprintf(fmt, args);
-      va_end(args);
-
       print("\n");
    }
+}
+
+void logMessage(LogLevel level, const char* fmt, ...)
+{
+   va_list args;
+   va_start(args, fmt);
+   logMessageV(level, fmt, args);
+   va_end(args);
 }
