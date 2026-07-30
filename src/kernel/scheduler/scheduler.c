@@ -54,7 +54,7 @@ static void _idle()
 // outgoing context into `prev`. Deliberately does NOT touch prev's
 // state or queue membership — the caller owns prev's lifecycle
 // (schedule() re-enqueues it Ready; schedulerExit() marks it Terminated).
-kNoReturn static inline void _swapContext(Thread* prev, Thread* next)
+static inline void _swapContext(Thread* prev, Thread* next)
 {
    _current = next;
    next->state = kThreadState_Running;
@@ -108,8 +108,8 @@ kNoReturn void schedulerExitThread(i32 code)
 
    Thread* next = _dequeue();
    if (next == nil)
-      kernelPanic("scheulder: no runnable thread");
+      kernelPanic("scheduler: no runnable thread");
    
    _swapContext(dead, next);
-   kernelPanic("scheulder: returned from final switch");
+   kernelPanic("scheduler: returned from final switch");
 }
