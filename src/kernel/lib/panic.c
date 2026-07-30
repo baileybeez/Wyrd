@@ -1,5 +1,6 @@
 #include "wyrd.h"
 #include "args.h"
+#include "arch/i686/cpu.h"
 #include "panic.h"
 #include "logger.h"
 

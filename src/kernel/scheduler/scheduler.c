@@ -2,6 +2,7 @@
 #include "arch/i686/cpu.h"
 #include "arch/i686/tss.h"
 #include "lib/logger.h"
+#include "lib/panic.h"
 #include "scheduler.h"
 #include "thread.h"
 
@@ -53,7 +54,7 @@ static void _idle()
 // outgoing context into `prev`. Deliberately does NOT touch prev's
 // state or queue membership — the caller owns prev's lifecycle
 // (schedule() re-enqueues it Ready; schedulerExit() marks it Terminated).
-static inline void _swapContext(Thread* prev, Thread* next)
+kNoReturn static inline void _swapContext(Thread* prev, Thread* next)
 {
    _current = next;
    next->state = kThreadState_Running;
@@ -96,7 +97,7 @@ Thread* schedulerCurrent()
    return _current;
 }
 
-void schedulerExitThread(i32 code)
+kNoReturn void schedulerExitThread(i32 code)
 {
    interruptsDisable();
 

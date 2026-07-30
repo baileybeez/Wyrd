@@ -14,6 +14,7 @@
 #include "fs/fat16/fat16.h"
 #include "lib/logger.h"
 #include "lib/mem.h"
+#include "lib/panic.h"
 #include "mm/pmm.h"
 #include "mm/heap.h"
 #include "scheduler/thread.h"

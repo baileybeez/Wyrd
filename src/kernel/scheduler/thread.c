@@ -4,6 +4,7 @@
 #include "scheduler.h"
 #include "mm/heap.h"
 #include "lib/logger.h"
+#include "lib/panic.h"
 
 #define kThreadStackSize 16384
 #define kInitialEflags   0x202
@@ -42,7 +43,7 @@ Thread* threadCreate(ThreadEntry entry)
 {
    Thread* t = kmalloc(sizeof(Thread));
    if (t == nil)
-      kPakernelPanicnic("threadCreate: kmalloc failed");
+      kernelPanic("threadCreate: kmalloc failed");
 
    u8* stack = kmalloc(kThreadStackSize);
    if (stack == nil) {

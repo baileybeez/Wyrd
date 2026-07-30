@@ -3,6 +3,7 @@
 #include "pmm.h"
 #include "heap.h"
 #include "lib/logger.h"
+#include "lib/panic.h"
 
 #define kHeapWalkLimit 2
 

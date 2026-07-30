@@ -6,6 +6,6 @@ void     schedulerInit();
 void     schedulerEnqueue(Thread* t);
 Thread*  schedulerCurrent();
 void     schedulerYield();
-void     schedulerExitThread(i32 code);
+kNoReturn void     schedulerExitThread(i32 code);
 
 void schedule();
