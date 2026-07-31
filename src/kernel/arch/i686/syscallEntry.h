@@ -1,5 +1,4 @@
 #pragma once
-
 #include "wyrd.h"
 
 void syscallInit();
