@@ -21,6 +21,8 @@ C_SRCS   := main.c \
 			drivers/input/keyboardMap.c \
 			drivers/video/vga.c \
 			drivers/serial/serial.c \
+			loader/elf.c \
+			loader/elfSelfTest.c \
 			lib/kprintf.c \
 			lib/logger.c \
 			lib/mem.c \
@@ -53,7 +55,10 @@ TEST_OBJ := $(BUILD_DIR)/tests/userProg.o
 
 LINKER_SCRIPT := $(KERNEL_SRC_DIR)/linker.ld
 
-FEATURES := -DkIncludeSelfTests
+# FEATURES options: `-D<flag> ...`
+# 	kIncludeSelfTests 	:: include all diagnostic / debug tests (i.e. ATA, FAT16, ELFLOAD)
+# 
+FEATURES := 
 CFLAGS   := $(TARGET_CFLAGS) $(FEATURES) -I$(KERNEL_SRC_DIR) -I$(COMMON_SRC_DIR) -MMD -MP
 CFLAGS   += -g3 -gdwarf-4 -O0 -fno-omit-frame-pointer
 
