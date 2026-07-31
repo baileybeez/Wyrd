@@ -59,6 +59,7 @@ $(DISK_IMAGE): $(STAGE1_BIN) $(STAGE2_BIN) $(KERNEL_BIN)
 	echo "hello from /tmp/file.txt via fat16" > file.txt
 	mmd   -i $(DISK_IMAGE) ::/tmp
 	mcopy -i $(DISK_IMAGE) file.txt ::/tmp/file.txt
+	mcopy -i $(DISK_IMAGE) $(BUILD_DIR)/user/sample ::/sample
 
 $(STAGE1_BIN): $(CUSTOM_SRC)/stage1.asm
 	@mkdir -p $(dir $@)

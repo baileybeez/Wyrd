@@ -12,6 +12,7 @@
 #include "drivers/serial/serial.h"
 #include "drivers/video/vga.h"
 #include "fs/fat16/fat16.h"
+#include "loader/exec.h"
 #include "lib/logger.h"
 #include "lib/mem.h"
 #include "lib/panic.h"
@@ -199,7 +200,11 @@ void kernelMain(BootInfo* bi)
    
    // TODO: spawn user Process and system thread
    threadCreate(_kernelCompanion);
-   spawnUserThread();
+   //spawnUserThread();
+   Thread* thread = execFromDisk(&g_Vol, "/sample");
+   if (thread == nil)
+      kernelPanic("unable to locate exe :: '/sample'");
+      
    for(;;);
 
    // syscall (sysWrite) test

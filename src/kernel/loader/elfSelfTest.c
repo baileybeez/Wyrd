@@ -1,5 +1,6 @@
 #include "wyrd.h"
 #include "elf.h"
+#include "exec.h"
 #include "arch/i686/paging.h"
 #include "lib/mem.h"
 #include "drivers/serial/serial.h"
@@ -13,11 +14,6 @@
 static const u8 _kPattern[kTestFileSz] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 };
 
 static u8 _image[128];
-
-typedef struct {
-   const u8* base;
-   u32       len;
-} BufReader;
 
 static bool _expect(bool cond, const char* label)
 {

@@ -43,7 +43,7 @@ static Thread* _dequeue()
    return head;
 }
 
-static void _idle()
+static void _schedulerIdle()
 {
    for (;;) {
       __asm__ volatile("sti; hlt");    // enable interrupts, halt until one fires
@@ -82,7 +82,7 @@ void schedulerInit()
 {
    _current = threadBootstrap();
    _tail = nil;
-   threadCreate(_idle);
+   threadCreate(_schedulerIdle);
 }
 
 void schedulerEnqueue(Thread* t)
@@ -99,6 +99,7 @@ Thread* schedulerCurrent()
 
 kNoReturn void schedulerExitThread(i32 code)
 {
+   kTrace("Thread exiting with code %u", code);
    interruptsDisable();
 
    kUnused(code);

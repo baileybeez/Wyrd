@@ -23,6 +23,7 @@ C_SRCS   := main.c \
 			drivers/serial/serial.c \
 			loader/elf.c \
 			loader/elfSelfTest.c \
+			loader/exec.c \
 			lib/kprintf.c \
 			lib/logger.c \
 			lib/mem.c \
