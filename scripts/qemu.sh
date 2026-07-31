@@ -21,20 +21,33 @@ imagePath="$2"
 shift 2
 
 debugMode=false
+dataImage=""
 
-for arg in "$@"; do
-   if [ "$arg" = "debug" ]; then
-      debugMode=true
-   else
-      echo "Unknown option: $arg"
-      exit 1
-   fi
+while [ "$#" -gt 0 ]; do
+   case "$1" in
+      debug)
+         debugMode=true
+         ;;
+      data)
+         shift
+         dataImage="${1:-}"
+         if [ -z "$dataImage" ]; then
+            echo "Option 'data' requires an image path"
+            exit 1
+         fi
+         ;;
+      *)
+         echo "Unknown option: $1"
+         exit 1
+         ;;
+   esac
+   shift
 done
 
 qemuArgs=()
 case "$mediaType" in
    cd)
-      qemuArgs+=(-cdrom "$imagePath")
+      qemuArgs+=(-cdrom "$imagePath" -boot d)
       ;;
    disk)
       qemuArgs+=(-drive "format=raw,file=$imagePath")
@@ -44,6 +57,10 @@ case "$mediaType" in
       exit 1
       ;;
 esac
+
+if [ -n "$dataImage" ]; then
+   qemuArgs+=(-drive "format=raw,file=$dataImage,if=ide,index=0,media=disk")
+fi
 
 mkdir -p logs
 

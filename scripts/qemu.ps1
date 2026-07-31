@@ -15,30 +15,35 @@ if ($args.Length -lt 2) {
 $mediaType = $args[0]
 $imagePath = $args[1]
 $debugMode = $false
+$dataImage = $null
 
 for ($i = 2; $i -lt $args.Length; $i++) {
-   if ($args[$i] -eq "debug") {
-      $debugMode = $true
-   }
-   else {
-      Write-Host "Unknown option: $($args[$i])"
-      exit 1
+   switch ($args[$i]) {
+      "debug" { $debugMode = $true }
+      "data"  { $i++; $dataImage = $args[$i] }
+      default {
+         Write-Host "Unknown option: $($args[$i])"
+         exit 1
+      }
    }
 }
 
 $qemuArgs = @()
 switch ($mediaType) {
-   "cd"   { $qemuArgs += @("-cdrom", $imagePath) }
+   "cd"   { $qemuArgs += @("-cdrom", $imagePath, "-boot", "d") }
    "disk" { $qemuArgs += @("-drive", "format=raw,file=$imagePath") }
    default {
       Write-Host "Unknown media type: $mediaType (expected 'cd' or 'disk')"
       exit 1
    }
 }
+if ($dataImage) {
+   $qemuArgs += @("-drive", "format=raw,file=$dataImage,if=ide,index=0,media=disk")
+}
 
 $qemuArgs += @(
    "-chardev",    "stdio,id=char0,logfile=logs/serial.log,signal=off", 
-   "-serial",     "chardev:char0"
+   "-serial",     "chardev:char0", 
    "-debugcon",   "file:logs/debug-qemu.log",
    "-no-reboot",
    "-no-shutdown",
