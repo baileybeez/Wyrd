@@ -1,4 +1,5 @@
 #include "wyrd.h"
+#include "arch/i686/cpu.h"
 #include "drivers/serial/serial.h"
 #include "boot/bootInfo.h"
 #include "drivers/ata/ata.h"
@@ -41,7 +42,7 @@ void stage2Main(u32 bootDrive)
          i, e->baseHigh, e->baseLow, e->lengthHigh, e->lengthLow, e->type);
    }
 
-   #ifdef kATA_SelfTest
+   #ifdef kIncludeSelfTests
    // this should report (via serial console): 
    //    [ATA] selftest: reading LBA 0...
    //    [ATA] first 16 bytes: eb 3c 90 42 45 45 42 4f 4f 54 20 0 2 1 11 0
