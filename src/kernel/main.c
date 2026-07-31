@@ -15,6 +15,7 @@
 #include "lib/logger.h"
 #include "lib/mem.h"
 #include "lib/panic.h"
+#include "loader/elf.h"
 #include "mm/pmm.h"
 #include "mm/heap.h"
 #include "scheduler/thread.h"
@@ -191,6 +192,10 @@ void kernelMain(BootInfo* bi)
       fat16SelfTest(&g_Vol);
 #endif
    }
+
+#ifdef kIncludeSelfTests
+   elfSelfTest();
+#endif
    
    // TODO: spawn user Process and system thread
    threadCreate(_kernelCompanion);
