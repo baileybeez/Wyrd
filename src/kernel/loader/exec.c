@@ -2,6 +2,7 @@
 #include "exec.h"
 #include "elf.h"
 #include "arch/i686/paging.h"
+#include "lib/logger.h"
 #include "lib/mem.h"
 #include "mm/memory.h"
 #include "mm/heap.h"
@@ -49,14 +50,16 @@ Thread* execFromDisk(const Fat16Volume* vol, const char* path)
    buf.len  = fileSize;
    buf.base = buffer;
 
+   AddressSpace addrSpace;
    u32 entryPoint = 0;
-   ElfError elfErr = elfLoad(_bufferRead, (const void*)&buf, buf.len, &entryPoint);
+   ElfError elfErr = elfLoad(_bufferRead, (const void*)&buf, buf.len, &addrSpace, &entryPoint);
    
    kfree(buffer);
    if (elfErr != kElfErr_OK) {
       return nil;
    }
 
+   kTrace("execFromDisk: allocating/paging stack frame for user process");
    u32 stackFrame = pmmAllocFrame();
    if (stackFrame == kInvalidFrame) {
       // clean up elf allocated frames?
