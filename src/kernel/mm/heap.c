@@ -27,8 +27,12 @@ static BlockHeader* _heapFindFreeBlock(u32 request)
 static bool _heapGrow(u32 minBytes)
 {
    u32 needed = (minBytes + sizeof(BlockHeader) + kPageSize - 1) & ~(kPageSize - 1);
-   u32 oldEnd = g_heapEnd;
+   if (g_heapEnd + needed >= kHeapVirtualLimit) {
+      kTrace("heap: unable to grow heap (out of reserved space)");
+      return false;
+   }
 
+   u32 oldEnd = g_heapEnd;
    for (u32 mapped = 0; mapped < needed; mapped += kPageSize) {
       u32 frame = pmmAllocFrame();
       if (frame == kInvalidFrame)
@@ -71,12 +75,16 @@ void _heapCoalesce()
 
 void heapInit()
 {
+   if (!pagingReserveRange(kHeapVirtualStart, kHeapVirtualLimit))
+      kernelPanic("heapInit: unable to preallocate PDEs");
+
    for (u32 offset = 0; offset < kHeapInitialSize; offset += kPageSize) {
       u32 frame = pmmAllocFrame();
       if (frame == kInvalidFrame)
-         kernelPanic("unable to allocate initial heap frame %u", offset);
+         kernelPanic("heapInit: unable to allocate initial heap frame %u", offset);
 
-      pagingMapPage(kHeapVirtualStart + offset, frame, kPageFlag_Writable);
+      if (!pagingMapPage(kHeapVirtualStart + offset, frame, kPageFlag_Writable))
+         kernelPanic("heapInit: unable to map virtual heap frame %x", kHeapVirtualStart + offset);
    }
    g_heapEnd  = kHeapVirtualStart + kHeapInitialSize;
    g_heapHead = (BlockHeader*)kHeapVirtualStart;
