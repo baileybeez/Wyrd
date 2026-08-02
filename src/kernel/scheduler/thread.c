@@ -4,6 +4,7 @@
 #include "scheduler.h"
 #include "mm/heap.h"
 #include "lib/logger.h"
+#include "lib/mem.h"
 #include "lib/panic.h"
 
 #define kThreadStackSize 16384
@@ -24,26 +25,35 @@ static void _threadExit()
    kernelPanic("thread returned from its entry function!");
 }
 
-Thread* threadBootstrap()
+static Thread* _threadAlloc()
 {
    Thread* t = kmalloc(sizeof(Thread));
    if (t == nil)
-      kernelPanic("threadBootstrap: kmalloc failed");
+      kernelPanic("_threadAlloc: kmalloc failed");
 
+   memset(t, 0x00, sizeof(Thread));
    t->id        = getThreadId();
+   t->state     = kThreadState_Ready;
+   t->space     = pagingBootSpace();
+   t->next      = nil;  
+
+   return t;
+}
+
+Thread* threadBootstrap()
+{
+   Thread* t = _threadAlloc();
+   
    t->state     = kThreadState_Running;
-   t->savedEsp  = 0;
    t->stackBase = (u32)stack_bottom;
    t->stackSize = (u32)(stack_top - stack_bottom);
-   t->next      = nil;
+   
    return t;
 }
 
 Thread* threadCreate(ThreadEntry entry)
 {
-   Thread* t = kmalloc(sizeof(Thread));
-   if (t == nil)
-      kernelPanic("threadCreate: kmalloc failed");
+   Thread* t = _threadAlloc();
 
    u8* stack = kmalloc(kThreadStackSize);
    if (stack == nil) {
@@ -51,12 +61,9 @@ Thread* threadCreate(ThreadEntry entry)
       return nil;
    }
 
-   t->id        = getThreadId();
-   t->state     = kThreadState_Ready;
    t->stackBase = (u32)stack;
    t->stackSize = kThreadStackSize;
-   t->next      = nil;
-
+   
    // hand-craft initial stack so that the first switchContext() into this
    // thread pops zeroed callee-saved registers and 'ret's into 'entry'
    //
@@ -84,9 +91,7 @@ Thread* threadCreate(ThreadEntry entry)
 
 Thread* threadCreateUser(u32 entry, u32 userStackTop)
 {
-   Thread* t = kmalloc(sizeof(Thread));
-   if (t == nil)
-      kernelPanic("threadCreateUser: kmalloc failed");
+   Thread* t = _threadAlloc();
 
    u8* stack = kmalloc(kThreadStackSize);
    if (stack == nil) {
@@ -94,12 +99,9 @@ Thread* threadCreateUser(u32 entry, u32 userStackTop)
       return nil;
    }
    
-   t->id        = getThreadId();
-   t->state     = kThreadState_Ready;
    t->stackBase = (u32)stack;
    t->stackSize = kThreadStackSize;
-   t->next      = nil;
-
+   
    // firts switchContext() 'ret's into enterUserMode, which finds 
    // 'entry' and 'userStackTop' as its cdecl args and iret's into 
    // Ring3 (consumed once)
