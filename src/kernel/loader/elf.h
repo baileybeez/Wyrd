@@ -12,7 +12,10 @@ typedef enum {
    kElfErr_BadProgramHeader   = 6,
    kElfErr_SegOutOfRange      = 7,
    kElfErr_ReadFailed         = 8,
-   kElfErr_NoMemory           = 9
+   kElfErr_NoMemory           = 9, 
+   kElfErr_BadEndian          = 10,
+   kElfErr_BadEntry           = 11,
+   kElfErr_BadArgument        = 12
 } ElfError;
 
 typedef struct {

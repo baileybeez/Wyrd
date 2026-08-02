@@ -89,7 +89,7 @@ Thread* threadCreate(ThreadEntry entry)
    return t;
 }
 
-Thread* threadCreateUser(u32 entry, u32 userStackTop)
+Thread* threadCreateUser(u32 entry, u32 userStackTop, AddressSpace* space)
 {
    Thread* t = _threadAlloc();
 
@@ -99,10 +99,11 @@ Thread* threadCreateUser(u32 entry, u32 userStackTop)
       return nil;
    }
    
+   t->space     = space;
    t->stackBase = (u32)stack;
    t->stackSize = kThreadStackSize;
    
-   // firts switchContext() 'ret's into enterUserMode, which finds 
+   // first switchContext() 'ret's into enterUserMode, which finds 
    // 'entry' and 'userStackTop' as its cdecl args and iret's into 
    // Ring3 (consumed once)
    // IF is left  clear so the brief ring-0 window inside 
