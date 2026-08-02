@@ -25,6 +25,7 @@ void           pagingInvalidatePage(u32 virtualAddr);
 void           pagingSealKernelPDEs();
 AddressSpace*  pagingBootSpace();
 AddressSpace*  addressSpaceCreate();
+void           addressSpaceDestroy(AddressSpace* space);
 void           addressSpaceLoad(AddressSpace* space);
 
 #ifdef kIncludeSelfTests
