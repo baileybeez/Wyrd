@@ -126,3 +126,8 @@ kNoReturn void schedulerExitThread(i32 code)
    _swapContext(dead, next);
    kernelPanic("scheduler: returned from final switch");
 }
+
+AddressSpace*  schedulerCurrentSpace()
+{
+   return _current->space;
+}
