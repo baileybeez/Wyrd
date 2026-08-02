@@ -4,7 +4,7 @@
 #include "lib/kprintf.h"
 #include "serial.h"
 
-
+#ifdef kSerialTrace
 static const u16 kCom1Port       = 0x3F8;
 static const u8  kLineStatusTHR  = 0x20;
 static const u8  kLoopbackByte   = 0xAE;
@@ -21,9 +21,12 @@ static void _writeByteRaw(char c)
    while (!_isTransmitEmpty()) { }
    outb(kCom1Port, (u8)c);
 }
+#endif
+
 
 bool serialInit()
 {
+#ifdef kSerialTrace
    outb(kCom1Port + 1, 0x00);
    outb(kCom1Port + 3, 0x80);
    outb(kCom1Port + 0, 0x03);
@@ -38,39 +41,62 @@ bool serialInit()
       return false;
    
    outb(kCom1Port + 4, 0x0F);
+#endif
    return true;
 }
 
 void serialWriteChar(char c)
 {
+#ifdef kSerialTrace
    if (c == '\n' && _convertLFtoCRLF)
       _writeByteRaw('\r');
 
    _writeByteRaw(c);
+#else
+   kUnused(c);
+#endif
 }
 
 void serialWriteString(const char* s)
 {
+#ifdef kSerialTrace
    while (*s) {
       serialWriteChar(*s++);
    }
+#else
+   kUnused(s);
+#endif
 }
 
 void serialWrite(const char* buf, u32 len)
 {
+#ifdef kSerialTrace
    for (u32 i = 0; i < len ; i++)
       serialWriteChar(buf[i]);
+#else 
+   kUnused(buf);
+   kUnused(len);
+#endif
 }
 
 void serialPrintf(const char* fmt, ...)
 {
+#ifdef kSerialTrace
    va_list args;
    va_start(args, fmt);
    serialVprintf(fmt, args);
    va_end(args);
+#else
+   kUnused(fmt);
+#endif
 }
 
 void serialVprintf(const char* fmt, va_list args)
 {
+#ifdef kSerialTrace
    kvPrintf(serialWriteChar, fmt, args);
+#else
+   kUnused(fmt);
+   kUnused(args);
+#endif
 }
