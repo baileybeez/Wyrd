@@ -22,7 +22,6 @@
 #include "scheduler/thread.h"
 #include "scheduler/scheduler.h"
 #include "syscall.h"
-#include "userProg.h"
 
 extern u32 _kernelStart;
 extern u32 _kernelPhysicalEnd;
@@ -131,6 +130,16 @@ void testHeap()
    p = kmalloc(kHeapInitialSize * 2);
    u32 phys = pagingGetPhysical((u32)p);
    kTrace("growth alloc gave: %p at phys addr: 0x%x (expects > 0xD0000000)", p, phys);
+
+   // TEST: force grow beyond 0xD0400000
+   //       allocating 1024(+1) instances of a 4k buffer should put us over the target
+   for (u32 i = 0; i < 1025; i++) {
+      u32* k = kmalloc(4096);
+      if ((u32)k > 0xD0400000) {
+         kTrace("kmalloc successfully allocated a 4k buffer at %x", k);
+         break;
+      }
+   }
 }
 
 // static void _demoA() { for (;;) { serialWriteString("A"); } }
@@ -162,26 +171,36 @@ void kernelMain(BootInfo* bi)
    archInitEarly();
 
    pagingInit();
-   // testPaging();
-   // pagingTestUserMapping();
-   
+#ifdef kIncludeSelfTests
+   testPaging();
+   pagingTestUserMapping();
+#endif
+
+   kTrace("heap init");   
    heapInit();
+   pagingSealKernelPDEs();
    testHeap();
    
+   kTrace("syscall init");
    syscallInit();
    archInitLate();
 
+   kTrace("keyboard init");
    keyboardInit();
    picClearMask(1);
 
+   kTrace("scheduler init");
    schedulerInit();
    // threadCreate(_demoA);
    // threadCreate(_demoB);
+
+   kTrace("interrupts enabled");
    interruptsEnable();
 
 #ifdef kIncludeSelfTests
    // ATA
    ataSelfTest();
+   pagingTestDumpHigherFrames();
 #endif
 
    // FAT16
@@ -199,8 +218,10 @@ void kernelMain(BootInfo* bi)
 #endif
    
    // TODO: spawn user Process and system thread
+   kTrace("spinning up kernel companion thread");
    threadCreate(_kernelCompanion);
-   //spawnUserThread();
+
+   kTrace("execFromDisk sample app");
    Thread* thread = execFromDisk(&g_Vol, "/sample");
    if (thread == nil)
       kernelPanic("unable to locate exe :: '/sample'");
