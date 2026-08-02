@@ -45,8 +45,7 @@ C_SRCS   := main.c \
 			mm/heap.c \
 			fs/fat16/fat16.c \
 			scheduler/thread.c \
-			scheduler/scheduler.c \
-			userProg.c 
+			scheduler/scheduler.c
 
 C_OBJS   := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SRCS))
 ASM_OBJS := $(patsubst %.asm,$(OBJ_DIR)/%.o,$(ASM_SRCS))
@@ -58,8 +57,8 @@ LINKER_SCRIPT := $(KERNEL_SRC_DIR)/linker.ld
 
 # FEATURES options: `-D<flag> ...`
 # 	kIncludeSelfTests 	:: include all diagnostic / debug tests (i.e. ATA, FAT16, ELFLOAD)
-# 
-FEATURES := 
+# 	kSerialTrace		:: includes support for debug console via serial (QEMU)
+FEATURES := -DkSerialTrace
 CFLAGS   := $(TARGET_CFLAGS) $(FEATURES) -I$(KERNEL_SRC_DIR) -I$(COMMON_SRC_DIR) -MMD -MP
 CFLAGS   += -g3 -gdwarf-4 -O0 -fno-omit-frame-pointer
 

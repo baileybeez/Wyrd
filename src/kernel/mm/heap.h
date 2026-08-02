@@ -2,6 +2,9 @@
 #include "wyrd.h"
 
 #define kHeapVirtualStart  0xD0000000
+#define kHeapPDEFirst      (kHeapVirtualStart >> 22)
+#define kHeapPDECount      16
+#define kHeapVirtualLimit  (kHeapVirtualStart + (kHeapPDECount * 0x400000))
 #define kHeapInitialSize   (64 * 1024)
 #define kHeapMinPayload    16
 

@@ -59,7 +59,19 @@ static inline void _swapContext(Thread* prev, Thread* next)
    _current = next;
    next->state = kThreadState_Running;
    tssSetKernelStack(next->stackBase + next->stackSize);
+
+   if (prev->space != next->space)
+      addressSpaceLoad(next->space);
+
    switchContext(&prev->savedEsp, next->savedEsp);
+}
+
+void schedulerSwitchAddressSpace(AddressSpace* space)
+{
+   u32 flags = irqSave();
+   _current->space = space;
+   addressSpaceLoad(space);
+   irqRestore(flags);
 }
 
 void schedule()
@@ -99,7 +111,7 @@ Thread* schedulerCurrent()
 
 kNoReturn void schedulerExitThread(i32 code)
 {
-   kTrace("Thread exiting with code %u", code);
+   kTrace("Thread exiting with code %i", code);
    interruptsDisable();
 
    kUnused(code);
