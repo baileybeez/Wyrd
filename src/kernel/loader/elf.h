@@ -1,5 +1,6 @@
 #pragma once
 #include "wyrd.h"
+#include "arch/i686/paging.h"
 
 typedef enum {
    kElfErr_OK                 = 0,
@@ -55,7 +56,7 @@ typedef struct {
 } __attribute__((packed)) ElfSectionHeader;
 
 typedef ElfError (*ElfReadFn)(const void* ctx, u32 offset, u32 len, void* dst);
-ElfError elfLoad(ElfReadFn read, const void* context, u32 imageLen, u32* outEntry);
+ElfError elfLoad(ElfReadFn read, const void* context, u32 imageLen, AddressSpace* space, u32* outEntry);
 
 #ifdef kIncludeSelfTests
 bool elfSelfTest();

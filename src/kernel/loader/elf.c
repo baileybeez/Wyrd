@@ -1,6 +1,7 @@
 #include "wyrd.h"
 #include "elf.h"
 #include "arch/i686/paging.h"
+#include "lib/logger.h"
 #include "lib/mem.h"
 #include "mm/pmm.h"
 #include "mm/memory.h"
@@ -31,7 +32,7 @@
 #define kElfIdent_Ver   7
 
 // validate ELF header, then process
-ElfError elfLoad(ElfReadFn read, const void* context, u32 imageLen, u32* outEntry)
+ElfError elfLoad(ElfReadFn read, const void* context, u32 imageLen, AddressSpace* space, u32* outEntry)
 {
    if (imageLen < sizeof(ELF32Header))
       return kElfErr_TooSmall;
@@ -68,10 +69,16 @@ ElfError elfLoad(ElfReadFn read, const void* context, u32 imageLen, u32* outEntr
          continue;
       if (progHeader.virtAddr + progHeader.memSegSize > kKernelVirtualBase)
          return kElfErr_SegOutOfRange;
+      if (progHeader.physSegSize > progHeader.memSegSize)
+         return kElfErr_SegOutOfRange;
 
       u32 vaStart = progHeader.virtAddr & ~0xFFF;
       u32 vaEnd   = (progHeader.virtAddr + progHeader.memSegSize + 0xFFF) & ~0xFFF;
       for (u32 addr = vaStart; addr < vaEnd; addr += kPageSize) {
+         if (pagingIsMapped(addr))
+            continue;
+
+         kTrace("elfLoad: allocating frame for user process");
          u32 frame = pmmAllocFrame();
          if (frame == kInvalidFrame)
             return kElfErr_NoMemory;
