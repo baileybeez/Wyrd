@@ -69,5 +69,5 @@ While any virtual machine should suffice in running/testing Wyrd, development an
 11. <s>Ring 3 transition, first userspace program printing via syscall</s>
 12. <s>ATA PIO disk driver</s>
 13. <s>FAT16 read-only filesystem driver</s>
-14. ELF loader, first program loaded from disk executed in userspace
+14. <s>ELF loader, first program loaded from disk executed in userspace</s>
 15. In-kernel shell running programs from disk

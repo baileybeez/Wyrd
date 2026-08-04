@@ -6,8 +6,6 @@
 ; new context was last suspended.
 ;
 ; Caller-saved regs (eax, ecx, edx) don't need preservation across a cdecl call.
-; EFLAGS is inherited from the current context — if you yield with interrupts
-; enabled, the new thread starts with interrupts enabled.
 ;
 ; savedEsp points at the top of a thread's kernel stack at the moment it stopped 
 ; running. For a cooperatively-yielded thread, that top holds callee-saved 
