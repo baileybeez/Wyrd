@@ -7,17 +7,24 @@
 #include "scheduler.h"
 #include "thread.h"
 
-// Scheduler is currently a round-robin: a circular linked list maintains the queue
+// Scheduler supports a two-tier approach to thread scheduling
+//    `schedule()` will prefer to skip _idle whenever the RunQueue isn't empty
+//
+// There are two distinct types of lists maintained by scheduler:    
+//    - Run Queue       :: round-robin, circular linked list (declared here)
+//    - Wait Queue(s)   :: null terminated FIFO (maintained by caller, ie. keyboard driver)
 // 
-//    - Run Queue       :: circular linked list
-//    - Wait Queue(s)   :: null terminated FIFO
-// 
-// ** all queues use `thread->next`, so a thread is on at MOST one list at a time
-// ** every enqueue asserts that on entry.
+// ** all queues use `thread->next`, so any thread should only ever be on ONE list at a time
+// ** every enqueue asserts that fact on entry.
+// ** `schedulerBlockCurrent()` expects interrupts to already be OFF, and callers must
+//    retest their wake conditionin a loop - the check and block must be atomic
+//    against the waking IRQ
+// ** a blocked thread resumes with IF still clear — switchContext saves and
+//    restores EFLAGS per context, which is what keeps the recheck safe.
 
 extern void switchContext(u32* oldEspSlot, u32 nextEsp);
 
-// Run Queue
+// [Run Queue]
 static Thread* _current;
 static Thread* _tail;
 static Thread* _idle;
@@ -52,6 +59,32 @@ static Thread* _dequeue()
    return head;
 }
 
+// attempt to dequeue, skipping the Idle thread
+static Thread* _dequeueWithoutIdle()
+{
+   kAssert(_current != nil);
+   kAssert(_idle != nil);
+
+   Thread* t = _dequeue();
+   if (t != _idle)
+      return t;
+
+   Thread* real = _dequeue();
+   _enqueue(_idle);
+   return real;
+}
+
+// attempt to dequeue, skipping the Idle thread
+// if that fails (its only thread), dequeue the idle thread
+static Thread* _dequeueSafe()
+{
+   Thread* t = _dequeueWithoutIdle();
+   if (t == nil)
+      t = _dequeue();
+
+   return t;
+}
+
 static void _waitEnqueue(WaitQueue* queue, Thread* t)
 {
    kAssert(t->next == nil);
@@ -78,7 +111,7 @@ static Thread* _waitDequeue(WaitQueue* queue)
    return t;
 }
 
-static u32 _idleIterations = 0;
+static volatile u32 _idleIterations = 0;
 static void _schedulerIdle()
 {
    for (;;) {
@@ -118,7 +151,7 @@ void schedule()
    u32 flags = irqSave();
 
    Thread* prev = _current;
-   Thread* next = _dequeue();
+   Thread* next = _dequeueWithoutIdle();
    if (next != nil) {
       _enqueue(prev);
       _swapContext(prev, next);
@@ -156,13 +189,14 @@ Thread* schedulerCurrent()
 void schedulerBlockCurrent(WaitQueue* queue)
 {
    kAssert((readEflags() & kEflags_IF) == 0);
+   kAssert(_current != nil);
    kAssert(_current != _idle);
 
    Thread* prev = _current;
    prev->state = kThreadState_Blocked;
    _waitEnqueue(queue, prev);
 
-   Thread* next = _dequeue();
+   Thread* next = _dequeueSafe();
    if (next == nil)
       kernelPanic("scheduler: blocked with empty run queue");
 
@@ -199,7 +233,7 @@ kNoReturn void schedulerExitThread(i32 code)
    Thread* dead = schedulerCurrent();
    dead->state = kThreadState_Terminated;
 
-   Thread* next = _dequeue();
+   Thread* next = _dequeueSafe();
    if (next == nil)
       kernelPanic("scheduler: no runnable thread");
    

@@ -43,7 +43,7 @@ $ ./make wyrd-iso
 ```
 
 ### **Running via QEMU**
-While any virtual machine should suffice in running/testing Wyrd, development and testing has been done primarly against QEMU. QEMU can be launched via: `scripts/qemu <cd|disk> <image> [debug]`
+While any virtual machine should suffice in running/testing Wyrd, development and testing has been done primarly against QEMU. QEMU can be launched via: `scripts/qemu <cd|disk> <image> [debug] [dataImage path/to/disk.img]`
 
 |  |  |
 |-------|------|
@@ -51,7 +51,7 @@ While any virtual machine should suffice in running/testing Wyrd, development an
 |*drive*|  boots as a disk image  |
 |*image*|  the path to the image (i.e. `build/)wyrd.img`)   |
 |*debug*|  (optional) enables QEMU's debug flags (`-s -S`) |
-
+|*dataImage* *imgPath*| (optional) attaches a disk to the VM (useful for testing grub ISO+FAT16)
 ---
 
 ## Roadmap / Milestones
