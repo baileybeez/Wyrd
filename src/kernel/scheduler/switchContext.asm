@@ -12,6 +12,8 @@
 ; regs + eflags + a return address into schedule. For a preempted thread, the 
 ; same thing sits on top of a full interrupt frame further down the stack - that
 ; frame is consumed by iret when the eventual unwinding through the ISR path completes.
+;
+; ** a thread that suspends with IF clear will resume with IF clear
 
 section .text
 global switchContext
