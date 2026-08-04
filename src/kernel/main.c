@@ -142,14 +142,24 @@ void testHeap()
    }
 }
 
-// static void _demoA() { for (;;) { serialWriteString("A"); } }
-// static void _demoB() { for (;;) { serialWriteString("B"); } }
-
 static void _kernelCompanion()
 {
+   u32 prev = 0;
    for (;;) {
-      kTrace("[kernel] tick");
-      for (volatile u32 i = 0; i < 0x02000000; ++i) { }
+      u32 now = ticksGetCount();
+      if (now - prev >= 100) {
+         kTrace("[kernel] ticks=%u idle=%u", now, schedulerIdleCount());
+         prev = now;
+      }
+   }
+}
+
+static void _keyInTests()
+{
+   for (;;) {
+      KeyEvent ev = keyboardReadKey();
+      putChar(ev.ascii);
+      kTrace("[keypress] ticks=%u idle=%u", ticksGetCount(), schedulerIdleCount());
    }
 }
 
@@ -187,14 +197,12 @@ void kernelMain(BootInfo* bi)
 
    kTrace("keyboard init");
    keyboardInit();
-   picClearMask(1);
 
    kTrace("scheduler init");
    schedulerInit();
-   // threadCreate(_demoA);
-   // threadCreate(_demoB);
 
    kTrace("interrupts enabled");
+   keyboardClearMask();
    interruptsEnable();
 
 #ifdef kIncludeSelfTests
@@ -217,34 +225,38 @@ void kernelMain(BootInfo* bi)
    elfSelfTest();
 #endif
    
-   // TODO: spawn user Process and system thread
-   kTrace("spinning up kernel companion thread");
+   kTrace("spinning up kernel thread");
    threadCreate(_kernelCompanion);
 
-   kTrace("execFromDisk sample app");
-   Thread* thread = execFromDisk(&g_Vol, "/sample");
-   if (thread == nil)
-      kernelPanic("unable to locate exe :: '/sample'");
-      
-   for(;;);
+   kTrace("spinning up keyboard test thread");
+   threadCreate(_keyInTests);
 
-   // syscall (sysWrite) test
-   const char* str = "Hello World\n";
-   i32 n = syscall3(kSys_Write, (u32)str, 12, 0);
-   kTrace("sys_write returned %d (excepted 11)", n);
-
-   u32 prev = 0;
-   while (true) {
-      char c;
-      if (keyboardTryReadKey(&c))
-         putChar(c);
-
-      u32 now = ticksGetCount();
-      if (now - prev >= 100) {
-         kTrace("tick: %u", now);
-         prev = now;
-      }
-   }
+   // terminate the bootstrap thread
+   schedulerExitThread(0);
+   
+   // kTrace("execFromDisk sample app");
+   // Thread* thread = execFromDisk(&g_Vol, "/sample");
+   // if (thread == nil)
+   //    kernelPanic("unable to locate exe :: '/sample'");
+   //    
+// 
+   // // syscall (sysWrite) test
+   // const char* str = "Hello World\n";
+   // i32 n = syscall3(kSys_Write, (u32)str, 12, 0);
+   // kTrace("sys_write returned %d (excepted 11)", n);
+// 
+   // u32 prev = 0;
+   // while (true) {
+   //    KeyEvent ev;
+   //    if (keyboardTryReadKey(&ev))
+   //       putChar(ev.ascii);
+// 
+   //    u32 now = ticksGetCount();
+   //    if (now - prev >= 100) {
+   //       kTrace("tick: %u", now);
+   //       prev = now;
+   //    }
+   // }
 
    // Halt
    kernelPanic("- System Halted -");
