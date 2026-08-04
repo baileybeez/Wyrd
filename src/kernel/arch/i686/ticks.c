@@ -7,7 +7,7 @@ static volatile u32 g_ticks = 0;
 
 static void tickHandler(Registers* regs)
 {
-   (void)regs;
+   kUnused(regs);
    g_ticks++;
    schedule();
 }
