@@ -171,6 +171,7 @@ static void _keyInTests()
 void kernelMain(BootInfo* bi)
 {
    vgaInit();
+   kInfo("Preparing the Wyrd ...");
    kTrace("+ VGA initialized.");
 
    bi->kernelPhysStart = &_kernelStart;
