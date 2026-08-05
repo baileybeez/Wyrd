@@ -56,7 +56,10 @@ void logMessageV(LogLevel level, const char* fmt, va_list args)
       if (level >= kLogWarn)
          printf("%s", _logLevelPrefix(level));
 
-      vprintf(fmt, args);
+      va_list vgaArgs;
+      va_copy(vgaArgs, args);
+      vprintf(fmt, vgaArgs);
+      va_end(vgaArgs);
       print("\n");
    }
    irqRestore(flags);
