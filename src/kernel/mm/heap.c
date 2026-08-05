@@ -60,7 +60,7 @@ static bool _heapGrow(u32 minBytes)
 }
 
 // walk through the heap, coalescing each neighboring free block into a single block
-void _heapCoalesce()
+static void _heapCoalesce()
 {
    BlockHeader* block = _heapHead;
    while (block && block->next) {
@@ -153,7 +153,7 @@ void* kmalloc(u32 size)
 // if the ptr isn't nil, we move the pointer back to the block header
 // then we free the block
 // then we attempt to coalesce
-void _kfreeInternal(void* ptr)
+static void _kfreeInternal(void* ptr)
 {
    if (ptr == nil)
       return;
