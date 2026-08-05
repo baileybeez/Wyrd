@@ -1,8 +1,7 @@
 # Wyrd
 
-<p align="center" style='background: #e3dac9; color: #444; font-family: Garamond; font-size: 16pt;'>
-   <img src='./wyrd.png' alt='Wyrd Logo' width='240'><br />
-   <i>gæð a wyrd swa hio scel</i>
+<p align="center">
+   <img src='./wyrd-banner.png' alt='Wyrd Logo' width='838'><br />
 </p>
 
 > [!WARNING]
