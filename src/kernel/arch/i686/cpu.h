@@ -27,3 +27,9 @@ static inline u32 readEflags()
    __asm__ volatile("pushf; pop %0;" : "=r"(flags) :: "memory");
    return flags;
 }
+
+static inline u32 atomicFetchAdd(volatile u32* target, u32 value)
+{
+   __asm__ volatile("lock xaddl %0, %1" : "+r"(value), "+m"(*target) :: "memory", "cc");
+   return value;
+}

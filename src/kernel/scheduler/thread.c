@@ -20,8 +20,8 @@ extern u8 stack_top[];
 
 static Thread* _threadRegistry = nil;
 
-static u32 _nextThreadId = 0;
-static inline u32 getThreadId() { return _nextThreadId++; }
+static volatile u32 _nextThreadId = 0;
+static inline u32 getThreadId() { return atomicFetchAdd(&_nextThreadId, 1); }
 
 static void _threadExit()
 {
