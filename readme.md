@@ -1,7 +1,7 @@
 # Wyrd
 
 <p align="center">
-   <img src='./wyrd-banner.png' alt='Wyrd Logo' width='838'><br />
+   <img src='./wyrd.png' alt='Wyrd Logo' width='838'><br />
 </p>
 
 > [!WARNING]
