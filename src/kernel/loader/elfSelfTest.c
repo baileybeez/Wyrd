@@ -3,6 +3,7 @@
 #include "exec.h"
 #include "arch/i686/paging.h"
 #include "lib/mem.h"
+#include "scheduler/scheduler.h"
 #include "drivers/serial/serial.h"
 
 #ifdef kIncludeSelfTests
@@ -71,39 +72,54 @@ static u32 _buildImage(void)
    return segOff + kTestFileSz;
 }
 
+// caller must already be switched into the space the segments were loaded into
+static bool _verifyImage(void)
+{
+   const u8* seg = (const u8*)kTestEntry;
+ 
+   bool fileOk = true;
+   for (u32 i = 0; i < kTestFileSz && fileOk; i++)
+      fileOk = (seg[i] == _kPattern[i]);
+ 
+   bool bssOk = true;
+   for (u32 i = kTestFileSz; i < kTestMemSz && bssOk; i++)
+      bssOk = (seg[i] == 0);
+ 
+   bool ok = _expect(fileOk, "p_filesz bytes copied to p_vaddr");
+   return _expect(bssOk, "bss tail zeroed (memsz > filesz, spans page)") && ok;
+}
+
+
 bool elfSelfTest()
 {
    serialWriteString("elfSelfTest: begin\n");
 
    u32 imageLen = _buildImage();
 
+   AddressSpace* space = addressSpaceCreate();   
+   if (!_expect(space != nil, "address space created")) {
+      serialWriteString("elfSelfTest: FAIL\n");
+      return false;
+   }
+
    BufReader br = { _image, imageLen };
    u32 entry = 0;
-   ElfError rc = elfLoad(_bufRead, &br, imageLen, &entry);
+   ElfError rc = elfLoad(_bufRead, &br, imageLen, space, &entry);
 
    bool ok = true;
    ok = _expect(rc == kElfErr_OK, "elfLoad returns OK") && ok;
    ok = _expect(entry == kTestEntry, "entry point carried verbatim") && ok;
 
-   const u8* seg = (const u8*)kTestEntry;
-
-   bool filesOk = (rc == kElfErr_OK);
-   for (u32 i = 0; i < kTestFileSz && filesOk; i++)
-      filesOk = (seg[i] == _kPattern[i]);
-   ok = _expect(filesOk, "p_filesz bytes copied to p_vaddr") && ok;
-
-   bool bssOk = (rc == kElfErr_OK);
-   for (u32 i = kTestFileSz; i < kTestMemSz && bssOk; i++)
-      bssOk = (seg[i] == 0);
-   ok = _expect(bssOk, "bss tail zeroed (memsz > filesz, spans page)") && ok;
-
-   // release the mapping so the real loader can reuse kTestEntry cleanly
    if (rc == kElfErr_OK) {
-      u32 vaStart = kTestEntry & ~0xFFF;
-      u32 vaEnd   = (kTestEntry + kTestMemSz + 0xFFF) & ~0xFFF;
-      for (u32 va = vaStart; va < vaEnd; va += kPageSize)
-         pagingUnmapPage(va);
+      AddressSpace* prev = schedulerCurrentSpace();
+      schedulerSwitchAddressSpace(space);
+      bool imageOk = _verifyImage();
+      schedulerSwitchAddressSpace(prev);
+      ok = imageOk && ok;
    }
+ 
+   // must be back on `prev` before this runs — destroying the live CR3 faults
+   addressSpaceDestroy(space);
 
    serialWriteString(ok ? "elfSelfTest: PASS\n" : "elfSelfTest: FAIL\n");
    return ok;
