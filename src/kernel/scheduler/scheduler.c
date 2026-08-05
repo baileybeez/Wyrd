@@ -4,6 +4,7 @@
 #include "lib/assert.h"
 #include "lib/logger.h"
 #include "lib/panic.h"
+#include "mm/heap.h"
 #include "scheduler.h"
 #include "thread.h"
 
@@ -27,7 +28,14 @@ extern void switchContext(u32* oldEspSlot, u32 nextEsp);
 // [Run Queue]
 static Thread* _current;
 static Thread* _tail;
+
+// [Idle]
 static Thread* _idle;
+
+// [Reaper]
+static Thread*   _reaper;
+static WaitQueue _reaperWait;
+static WaitQueue _zombieQueue;
 
 static void _enqueue(Thread* t)
 {
@@ -114,9 +122,48 @@ static Thread* _waitDequeue(WaitQueue* queue)
 static volatile u32 _idleIterations = 0;
 static void _schedulerIdle()
 {
-   for (;;) {
+   kForever {
       _idleIterations++;
       __asm__ volatile("sti; hlt");    // enable interrupts, halt until one fires
+   }
+}
+
+// Reaper Thread monitors the zombie queue and then cleans up resources
+// in DISABLE INTERRUPTS: 
+//    - block while zombieQueue is empty
+//    - dequeue a zombie thread
+// 
+// - if AddressSpace isnt boot space, destroy it
+// - free the stackbase
+// 
+// in IRQ SAVE/RESTORE:
+//    - if zombie is detached OR claimed, we can free it
+//    - otherwise, flag it as reaped
+static void _reaperThread()
+{
+   kForever {
+      interruptsDisable();
+      while (_zombieQueue.head == nil)
+         schedulerBlockCurrent(&_reaperWait);
+      
+      Thread* z = _waitDequeue(&_zombieQueue);
+      interruptsEnable();
+
+      addressSpaceDestroy(z->space);
+      if (z->ownsStack)
+         kfree((void*)z->stackBase);
+
+      z->space     = nil;
+      z->stackBase = 0;
+
+      u32 flags = irqSave();
+      if (z->detached || z->claimed) {
+         threadUnregister(z);
+         kfree(z);
+      } else {
+         z->state = kThreadState_Reaped;
+      }      
+      irqRestore(flags);
    }
 }
 
@@ -167,6 +214,7 @@ void schedulerInit()
    _current = threadBootstrap();
    _tail    = nil;
    _idle    = threadCreate(_schedulerIdle);
+   _reaper  = threadCreate(_reaperThread);
 }
 
 u32 schedulerIdleCount()
@@ -223,15 +271,27 @@ void schedulerWakeAll(WaitQueue* queue)
    irqRestore(flags);
 }
 
+// exitThread(exitCode) :: 
+//    - switch thread state to zombie (awaiting reap) and set exitCode
+//    - wake all parent threads so they can react to termination
+//    - wake one reaper thread
+//    - dequeue the next thread in the runQueue
 kNoReturn void schedulerExitThread(i32 code)
 {
    kTrace("Thread exiting with code %i", code);
    interruptsDisable();
 
-   kUnused(code);
+   Thread* dead   = schedulerCurrent();
 
-   Thread* dead = schedulerCurrent();
-   dead->state = kThreadState_Terminated;
+   kAssert(dead != _idle);
+   kAssert(dead != _reaper);
+
+   dead->state    = kThreadState_Zombie;
+   dead->exitCode = code;
+
+   _waitEnqueue(&_zombieQueue, dead);
+   schedulerWakeAll(&dead->waitQueue);
+   schedulerWakeOne(&_reaperWait);
 
    Thread* next = _dequeueSafe();
    if (next == nil)

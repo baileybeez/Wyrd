@@ -2,11 +2,6 @@
 #include "wyrd.h"
 #include "thread.h"
 
-typedef struct {
-   Thread* head;
-   Thread* tail;
-} WaitQueue;
-
 void           schedulerInit();
 void           schedulerEnqueue(Thread* t);
 Thread*        schedulerCurrent();
