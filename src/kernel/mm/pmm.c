@@ -1,8 +1,9 @@
 #include "wyrd.h"
 #include "pmm.h"
-#include "../lib/mem.h"
-#include "../lib/logger.h"
-#include "../boot/bootInfo.h"
+#include "arch/i686/cpu.h"
+#include "lib/mem.h"
+#include "lib/logger.h"
+#include "boot/bootInfo.h"
 
 typedef void (*fncFlagFrame)(u32 idx);
 
@@ -14,7 +15,7 @@ static MemoryBitmap _bitmap;
  * where the 0th idx for a given stretch of 8 is the 
  * least significant bit: (0b00000001).
  */
-void _pmmClaimFrame(u32 frameIndex)
+static void _pmmClaimFrame(u32 frameIndex)
 {
    if (frameIndex >= _bitmap.totalFrames)
       return;
@@ -30,23 +31,7 @@ void _pmmClaimFrame(u32 frameIndex)
    _bitmap.usedFrames++;
 }
 
-void _pmmReleaseFrame(u32 frameIndex)
-{
-   if (frameIndex >= _bitmap.totalFrames)
-      return;
-
-   u32 idx = frameIndex >> 3; // frame / 8
-   u32 bit = frameIndex &  7; // frame % 8
-   u8 mask = 1 << bit;
-   if (!(_bitmap.bitmap[idx] & mask)) {
-      return;
-   }
-
-   _bitmap.bitmap[idx] &= ~mask;
-   _bitmap.usedFrames--;
-}
-
-u32 _pmmFindFreeFrame(u32 hint)
+static u32 _pmmFindFreeFrame(u32 hint)
 {
    u32 frameIdx = hint;
    while(frameIdx < _bitmap.totalFrames) {
@@ -67,7 +52,38 @@ u32 _pmmFindFreeFrame(u32 hint)
    return frameIdx;
 }
 
-void _pmmFlagRangeHelper(u32 startAddr, u32 endAddr, fncFlagFrame fnc)
+static u32 _pmmAllocFrameInternal()
+{
+   u32 frameIdx = _pmmFindFreeFrame(_bitmap.lastHint);
+   if (frameIdx == kInvalidFrame && _bitmap.lastHint != 0) {
+      kTrace("last hint failed, trying again from 0");
+      frameIdx = _pmmFindFreeFrame(0);
+   }   
+   if (frameIdx == kInvalidFrame)
+      return kInvalidFrame;
+
+   _pmmClaimFrame(frameIdx); 
+   _bitmap.lastHint = frameIdx + 1;
+   return frameIdx * kFrameSize;
+}
+
+static void _pmmReleaseFrame(u32 frameIndex)
+{
+   if (frameIndex >= _bitmap.totalFrames)
+      return;
+
+   u32 idx = frameIndex >> 3; // frame / 8
+   u32 bit = frameIndex &  7; // frame % 8
+   u8 mask = 1 << bit;
+   if (!(_bitmap.bitmap[idx] & mask)) {
+      return;
+   }
+
+   _bitmap.bitmap[idx] &= ~mask;
+   _bitmap.usedFrames--;
+}
+
+static void _pmmFlagRangeHelper(u32 startAddr, u32 endAddr, fncFlagFrame fnc)
 {
    if (endAddr > startAddr) {
       u32 startIdx = startAddr / kFrameSize;
@@ -78,7 +94,7 @@ void _pmmFlagRangeHelper(u32 startAddr, u32 endAddr, fncFlagFrame fnc)
    }
 }
 
-void _pmmReleaseAddrRange(u32 start, u32 end) 
+static void _pmmReleaseAddrRange(u32 start, u32 end) 
 { 
    u32 startAddr = (start + kFrameSize - 1) & ~(kFrameSize - 1); // round up
    u32 endAddr   = end & ~(kFrameSize - 1);                      // round down
@@ -86,7 +102,7 @@ void _pmmReleaseAddrRange(u32 start, u32 end)
    _pmmFlagRangeHelper(startAddr, endAddr, _pmmReleaseFrame); 
 }
 
-void _pmmClaimAddrRange(u32 start, u32 end)   
+static void _pmmClaimAddrRange(u32 start, u32 end)   
 { 
    u32 startAddr = start & ~(kFrameSize - 1);                    // round down
    u32 endAddr   = (end + kFrameSize - 1) & ~(kFrameSize - 1);   // round up
@@ -127,33 +143,32 @@ void pmmInit(BootInfo* info)
    _pmmClaimAddrRange((u32)info->kernelPhysStart, (u32)info->kernelPhysEnd);
 }
 
-u32  pmmAllocFrame()
+u32 pmmAllocFrame()
 {
-   u32 frameIdx = _pmmFindFreeFrame(_bitmap.lastHint);
-   if (frameIdx == kInvalidFrame && _bitmap.lastHint != 0) {
-      kTrace("last hint failed, trying again from 0");
-      frameIdx = _pmmFindFreeFrame(0);
-   }   
-   if (frameIdx == kInvalidFrame)
-      return kInvalidFrame;
-
-   _pmmClaimFrame(frameIdx); 
-   _bitmap.lastHint = frameIdx + 1;
-   return frameIdx * kFrameSize;
+   u32 flags = irqSave();
+   u32 frame = _pmmAllocFrameInternal();
+   irqRestore(flags);
+   return frame;
 }
 
 void pmmFreeFrame(u32 addr)
 {
+   u32 flags = irqSave();
    _pmmReleaseFrame(addr / kFrameSize);
+   irqRestore(flags);
 }
 
-u32  pmmFreeFrames()
+u32  pmmFreeFrameCount()
 {
-   return _bitmap.totalFrames - _bitmap.usedFrames;
+   u32 flags = irqSave();
+   u32 count = _bitmap.totalFrames - _bitmap.usedFrames;
+   irqRestore(flags);
+   return count;
 }
 
 void pmmDumpStats()
 {
+   u32 flags = irqSave();
    u32 free = _bitmap.totalFrames - _bitmap.usedFrames;
    kTrace("*** PMM ***  Total: %u, Used: %u, Free: %u", _bitmap.totalFrames, _bitmap.usedFrames, free);
    kTrace("*** PMM ***  Last Hint: %u", _bitmap.lastHint);
@@ -164,4 +179,5 @@ void pmmDumpStats()
 
    kTrace("*** PMM ***  %x %x %x %x %x %x %x %x", 
       map[0], map[1], map[2], map[3], map[4], map[5], map[6], map[7]);
+   irqRestore(flags);
 }

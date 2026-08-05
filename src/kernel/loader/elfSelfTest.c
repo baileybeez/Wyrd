@@ -2,9 +2,9 @@
 #include "elf.h"
 #include "exec.h"
 #include "arch/i686/paging.h"
+#include "lib/logger.h"
 #include "lib/mem.h"
 #include "scheduler/scheduler.h"
-#include "drivers/serial/serial.h"
 
 #ifdef kIncludeSelfTests
 
@@ -18,9 +18,9 @@ static u8 _image[128];
 
 static bool _expect(bool cond, const char* label)
 {
-   serialWriteString(cond ? "  [ok]   " : "  [FAIL] ");
-   serialWriteString(label);
-   serialWriteString("\n");
+   kTrace(cond ? "  [ok]   " : "  [FAIL] ");
+   kTrace(label);
+   kTrace("\n");
    return cond;
 }
 
@@ -92,13 +92,13 @@ static bool _verifyImage(void)
 
 bool elfSelfTest()
 {
-   serialWriteString("elfSelfTest: begin\n");
+   kTrace("elfSelfTest: begin\n");
 
    u32 imageLen = _buildImage();
 
    AddressSpace* space = addressSpaceCreate();   
    if (!_expect(space != nil, "address space created")) {
-      serialWriteString("elfSelfTest: FAIL\n");
+      kTrace("elfSelfTest: FAIL\n");
       return false;
    }
 
@@ -121,7 +121,7 @@ bool elfSelfTest()
    // must be back on `prev` before this runs — destroying the live CR3 faults
    addressSpaceDestroy(space);
 
-   serialWriteString(ok ? "elfSelfTest: PASS\n" : "elfSelfTest: FAIL\n");
+   kTrace(ok ? "elfSelfTest: PASS\n" : "elfSelfTest: FAIL\n");
    return ok;
 }
 

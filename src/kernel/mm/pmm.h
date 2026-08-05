@@ -26,4 +26,4 @@ void pmmInit(BootInfo* info);
 u32  pmmAllocFrame();
 void pmmFreeFrame(u32 addr); 
 void pmmDumpStats();
-u32  pmmFreeFrames();
+u32  pmmFreeFrameCount();

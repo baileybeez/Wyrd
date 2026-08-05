@@ -52,7 +52,7 @@ static bool _spinUntil(bool (*predicate)(u32), u32 id)
 
 static void _reportDelta(const char* label, u32 framesBefore, u32 heapBefore)
 {
-   u32 framesAfter = pmmFreeFrames();
+   u32 framesAfter = pmmFreeFrameCount();
    u32 heapAfter   = heapFreeBytes();
 
    u32 framesConsumed = framesBefore - framesAfter;
@@ -75,7 +75,7 @@ static void _lifecycleTierOne()
 {
    kTrace("[lifecycle] tier 1: detached kernel threads");
  
-   u32 framesBefore = pmmFreeFrames();
+   u32 framesBefore = pmmFreeFrameCount();
    u32 heapBefore   = heapFreeBytes();
  
    for (u32 i = 0; i < kLifecycleIterations; i++) {
@@ -102,7 +102,7 @@ static void _lifecycleTierTwo(const Fat16Volume* vol, const char* path, i32 expe
 {
    kTrace("[lifecycle] tier 2: user threads via %s", path);
  
-   u32 framesBefore = pmmFreeFrames();
+   u32 framesBefore = pmmFreeFrameCount();
    u32 heapBefore   = heapFreeBytes();
  
    for (u32 i = 0; i < kLifecycleIterations; i++) {
@@ -138,7 +138,7 @@ static void _lifecycleTierTwo(const Fat16Volume* vol, const char* path, i32 expe
 // Tier 3 -- both threadWait orderings, plus the error returns
 static void _lifecycleWaiterFirst(const Fat16Volume* vol, const char* path)
 {
-   u32 framesBefore = pmmFreeFrames();
+   u32 framesBefore = pmmFreeFrameCount();
    u32 heapBefore   = heapFreeBytes();
  
    Thread* t = execFromDisk(vol, path);
@@ -168,7 +168,7 @@ static void _lifecycleWaiterFirst(const Fat16Volume* vol, const char* path)
 
 static void _lifecycleReaperFirst(const Fat16Volume* vol, const char* path)
 {
-   u32 framesBefore = pmmFreeFrames();
+   u32 framesBefore = pmmFreeFrameCount();
    u32 heapBefore   = heapFreeBytes();
  
    Thread* t = execFromDisk(vol, path);
@@ -228,7 +228,7 @@ static void _lifecycleErrorReturns()
 
 void lifecycleSelfTest(const Fat16Volume* vol, const char* path, i32 expectedCode)
 {
-   kTrace("[lifecycle] baseline frames=%u heap=%u", pmmFreeFrames(), heapFreeBytes());
+   kTrace("[lifecycle] baseline frames=%u heap=%u", pmmFreeFrameCount(), heapFreeBytes());
    
    _lifecycleTierOne();
    _lifecycleTierTwo(vol, path, expectedCode);
@@ -236,7 +236,7 @@ void lifecycleSelfTest(const Fat16Volume* vol, const char* path, i32 expectedCod
    _lifecycleReaperFirst(vol, path);
    _lifecycleErrorReturns();
  
-   kTrace("[lifecycle] complete: frames=%u heap=%u", pmmFreeFrames(), heapFreeBytes());
+   kTrace("[lifecycle] complete: frames=%u heap=%u", pmmFreeFrameCount(), heapFreeBytes());
 }
 
 #endif // kIncludeSelfTests

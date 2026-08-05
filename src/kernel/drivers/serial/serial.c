@@ -1,5 +1,6 @@
 #include "wyrd.h"
 #include "args.h"
+#include "arch/i686/cpu.h"
 #include "arch/i686/io.h"
 #include "lib/kprintf.h"
 #include "serial.h"
@@ -21,8 +22,15 @@ static void _writeByteRaw(char c)
    while (!_isTransmitEmpty()) { }
    outb(kCom1Port, (u8)c);
 }
-#endif
 
+static void _serialWriteCharInternal(char c)
+{
+   if (c == '\n' && _convertLFtoCRLF)
+      _writeByteRaw('\r');
+
+   _writeByteRaw(c);
+}
+#endif
 
 bool serialInit()
 {
@@ -48,31 +56,21 @@ bool serialInit()
 void serialWriteChar(char c)
 {
 #ifdef kSerialTrace
-   if (c == '\n' && _convertLFtoCRLF)
-      _writeByteRaw('\r');
-
-   _writeByteRaw(c);
+   u32 flags = irqSave();
+   _serialWriteCharInternal(c);
+   irqRestore(flags);
 #else
    kUnused(c);
-#endif
-}
-
-void serialWriteString(const char* s)
-{
-#ifdef kSerialTrace
-   while (*s) {
-      serialWriteChar(*s++);
-   }
-#else
-   kUnused(s);
 #endif
 }
 
 void serialWrite(const char* buf, u32 len)
 {
 #ifdef kSerialTrace
+   u32 flags = irqSave();
    for (u32 i = 0; i < len ; i++)
-      serialWriteChar(buf[i]);
+      _serialWriteCharInternal(buf[i]);
+   irqRestore(flags);
 #else 
    kUnused(buf);
    kUnused(len);
@@ -94,7 +92,9 @@ void serialPrintf(const char* fmt, ...)
 void serialVprintf(const char* fmt, va_list args)
 {
 #ifdef kSerialTrace
-   kvPrintf(serialWriteChar, fmt, args);
+   u32 flags = irqSave();
+   kvPrintf(_serialWriteCharInternal, fmt, args);
+   irqRestore(flags);
 #else
    kUnused(fmt);
    kUnused(args);

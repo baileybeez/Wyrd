@@ -199,6 +199,10 @@ bool pagingUnmapPage(u32 virtualAddr)
 
    tbl[tableIndex] = 0;
    pagingInvalidatePage(virtualAddr);
+   if (dirIndex >= kKernelPdeFirst)
+      return true;
+   
+   // TODO: release table if empty (deferred #6)
    return true;
 }
 
@@ -241,7 +245,7 @@ AddressSpace*  addressSpaceCreate()
    dir[kRecursivePde] = frame | kPageFlag_Present | kPageFlag_Writable;
    _pagingScratchUnmap(kScratchDirectory);
    irqRestore(flags);
-   
+
    return space;
 }
 

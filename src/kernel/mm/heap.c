@@ -1,5 +1,6 @@
 #include "wyrd.h"
-#include "../arch/i686/paging.h"
+#include "arch/i686/cpu.h"
+#include "arch/i686/paging.h"
 #include "pmm.h"
 #include "heap.h"
 #include "lib/logger.h"
@@ -59,7 +60,7 @@ static bool _heapGrow(u32 minBytes)
 }
 
 // walk through the heap, coalescing each neighboring free block into a single block
-void _heapCoalesce()
+static void _heapCoalesce()
 {
    BlockHeader* block = _heapHead;
    while (block && block->next) {
@@ -113,7 +114,7 @@ u32 heapFreeBytes()
 // otherwise, we check to see if we can split the found block (min heap payload)
 //            and splice it into the linked list
 // lastly, we claim the block and return a pointer to the block's data (skip header)
-void* kmalloc(u32 size)
+static void* _kmallocInternal(u32 size)
 {
    if (_heapHead == nil)
       return nil;                      // heap is not initialized yet
@@ -141,10 +142,18 @@ void* kmalloc(u32 size)
    return (void*)(block + 1);  // this advances past the header (to the data segemnt)
 }
 
+void* kmalloc(u32 size)
+{
+   u32 flags = irqSave();
+   void* p = _kmallocInternal(size);
+   irqRestore(flags);
+   return p;
+}
+
 // if the ptr isn't nil, we move the pointer back to the block header
 // then we free the block
 // then we attempt to coalesce
-void kfree(void* ptr)
+static void _kfreeInternal(void* ptr)
 {
    if (ptr == nil)
       return;
@@ -152,4 +161,11 @@ void kfree(void* ptr)
    BlockHeader* block = (BlockHeader*)ptr - 1;
    block->free = true;
    _heapCoalesce();
+}
+
+void kfree(void* ptr)
+{
+   u32 flags = irqSave();
+   _kfreeInternal(ptr);
+   irqRestore(flags);
 }
