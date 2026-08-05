@@ -15,5 +15,7 @@ typedef struct _BlockHeader {
 } BlockHeader;
 
 void heapInit();
+u32  heapFreeBytes();
+
 void* kmalloc(u32 size);
-void kfree(void* ptr);
+void  kfree(void* ptr);
