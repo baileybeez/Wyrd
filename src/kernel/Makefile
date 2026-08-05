@@ -6,6 +6,7 @@ KERNEL_SRC_DIR := $(SRC_DIR)/kernel
 COMMON_SRC_DIR := $(SRC_DIR)/common
 KERNEL_BUILD   := $(BUILD_DIR)/kernel
 OBJ_DIR        := $(KERNEL_BUILD)/obj
+FLAG_CACHE	   := $(KERNEL_BUILD)/.cflags
 
 # explicit source lists
 ASM_SRCS := entry.asm \
@@ -22,7 +23,6 @@ C_SRCS   := main.c \
 			drivers/video/vga.c \
 			drivers/serial/serial.c \
 			loader/elf.c \
-			loader/elfSelfTest.c \
 			loader/exec.c \
 			lib/kprintf.c \
 			lib/logger.c \
@@ -45,14 +45,15 @@ C_SRCS   := main.c \
 			mm/heap.c \
 			fs/fat16/fat16.c \
 			scheduler/thread.c \
-			scheduler/scheduler.c
+			scheduler/scheduler.c \
+			loader/elfSelfTest.c \
+			loader/lifecycleTests.c
 
 C_OBJS   := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SRCS))
 ASM_OBJS := $(patsubst %.asm,$(OBJ_DIR)/%.o,$(ASM_SRCS))
 OBJS     := $(ASM_OBJS) $(C_OBJS)
 DEPS     := $(C_OBJS:.o=.d)
-TEST_OBJ := $(BUILD_DIR)/tests/userProg.o
-
+DEPS 	 := $(OBJS:.o=.d)
 LINKER_SCRIPT := $(KERNEL_SRC_DIR)/linker.ld
 
 # FEATURES options: `-D<flag> ...`
@@ -68,17 +69,21 @@ LIBS     := -lgcc
 KERNEL_ELF := $(KERNEL_BUILD)/kernel.elf
 KERNEL_BIN := $(KERNEL_BUILD)/kernel.bin
 
-.PHONY: all clean
-all: $(KERNEL_ELF) $(KERNEL_BIN)
+.PHONY: all clean force
+all: $(FLAG_CACHE) $(KERNEL_ELF) $(KERNEL_BIN)
+
+$(FLAG_CACHE): force
+	@mkdir -p $(dir $@)
+	@echo '$(CFLAGS)' | cmp -s - $@ || echo '$(CFLAGS)' > $@
 
 $(KERNEL_BIN): $(KERNEL_ELF)
 	$(TARGET_OBJCOPY) -O binary $< $@
 
-$(KERNEL_ELF): $(OBJS) $(LINKER_SCRIPT) $(TEST_OBJ)
+$(KERNEL_ELF): $(FLAG_CACHE) $(OBJS) $(LINKER_SCRIPT) 
 	@mkdir -p $(dir $@)
-	$(TARGET_LD) $(LDFLAGS) -o $@ $(OBJS) $(TEST_OBJ) $(LIBS)
+	$(TARGET_LD) $(LDFLAGS) -o $@ $(OBJS)  $(LIBS)
 
-$(OBJ_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c
+$(OBJ_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c $(FLAG_CACHE)
 	@mkdir -p $(dir $@)
 	$(TARGET_CC) $(CFLAGS) -c $< -o $@
 

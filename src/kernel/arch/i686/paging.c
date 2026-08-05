@@ -230,7 +230,7 @@ AddressSpace*  addressSpaceCreate()
    }
 
    space->physicalDirectory = frame;
-
+   u32 flags      = irqSave();
    u32* dir       = _pagingScratchMap(kScratchDirectory, frame);
    u32* kernelDir = _pagingDirectory();
 
@@ -240,7 +240,8 @@ AddressSpace*  addressSpaceCreate()
 
    dir[kRecursivePde] = frame | kPageFlag_Present | kPageFlag_Writable;
    _pagingScratchUnmap(kScratchDirectory);
-
+   irqRestore(flags);
+   
    return space;
 }
 
@@ -252,7 +253,8 @@ void addressSpaceDestroy(AddressSpace* space)
    if (space == g_currentSpace)
       kernelPanic("addressSpaceDestroy: destroying the loaded space");
 
-   u32* dir = _pagingScratchMap(kScratchDirectory, space->physicalDirectory);
+   u32 flags = irqSave();
+   u32* dir  = _pagingScratchMap(kScratchDirectory, space->physicalDirectory);   
    for (u32 dirIndex = 0; dirIndex < kKernelPdeFirst; dirIndex++) {
       if (!(dir[dirIndex] & kPageFlag_Present))
          continue;
@@ -269,6 +271,8 @@ void addressSpaceDestroy(AddressSpace* space)
    }
 
    _pagingScratchUnmap(kScratchDirectory);
+   irqRestore(flags);
+   
    pmmFreeFrame(space->physicalDirectory);
    kfree(space);
 }

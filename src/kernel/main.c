@@ -23,6 +23,11 @@
 #include "scheduler/scheduler.h"
 #include "syscall.h"
 
+#ifdef kIncludeSelfTests
+#include "drivers/ata/ata.h"
+#include "loader/elf.h"
+#endif
+
 extern u32 _kernelStart;
 extern u32 _kernelPhysicalEnd;
 
@@ -145,7 +150,7 @@ void testHeap()
 static void _kernelCompanion()
 {
    u32 prev = 0;
-   for (;;) {
+   kForever {
       u32 now = ticksGetCount();
       if (now - prev >= 100) {
          kTrace("[kernel] ticks=%u idle=%u", now, schedulerIdleCount());
@@ -156,7 +161,7 @@ static void _kernelCompanion()
 
 static void _keyInTests()
 {
-   for (;;) {
+   kForever {
       KeyEvent ev = keyboardReadKey();
       putChar(ev.ascii);
       kTrace("[keypress] ticks=%u idle=%u", ticksGetCount(), schedulerIdleCount());
@@ -231,7 +236,13 @@ void kernelMain(BootInfo* bi)
    kTrace("spinning up keyboard test thread");
    threadCreate(_keyInTests);
 
+   #ifdef kIncludeSelfTests
+   kTrace("spinning up Lifecycle Tests ...");
+   lifecycleSelfTest(&g_Vol, "/sample", 0);
+   #endif
+
    // terminate the bootstrap thread
+   kTrace("terminating boot thread"); 
    schedulerExitThread(0);
    
    // kTrace("execFromDisk sample app");

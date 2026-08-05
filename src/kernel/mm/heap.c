@@ -8,12 +8,12 @@
 #define kHeapWalkLimit 2
 
 // our heap is linked-list, first-fit 
-static BlockHeader*  g_heapHead = nil;
-static u32           g_heapEnd  = nil;
+static BlockHeader*  _heapHead = nil;
+static u32           _heapEnd  = nil;
 
 static BlockHeader* _heapFindFreeBlock(u32 request)
 {
-   BlockHeader* block = g_heapHead;
+   BlockHeader* block = _heapHead;
    while (block != nil) {
       if (block->free && block->size >= request)
          return block;
@@ -27,31 +27,31 @@ static BlockHeader* _heapFindFreeBlock(u32 request)
 static bool _heapGrow(u32 minBytes)
 {
    u32 needed = (minBytes + sizeof(BlockHeader) + kPageSize - 1) & ~(kPageSize - 1);
-   if (g_heapEnd + needed >= kHeapVirtualLimit) {
+   if (_heapEnd + needed >= kHeapVirtualLimit) {
       kTrace("heap: unable to grow heap (out of reserved space)");
       return false;
    }
 
-   u32 oldEnd = g_heapEnd;
+   u32 oldEnd = _heapEnd;
    for (u32 mapped = 0; mapped < needed; mapped += kPageSize) {
       u32 frame = pmmAllocFrame();
       if (frame == kInvalidFrame)
          return false;
 
-      if (!pagingMapPage(g_heapEnd, frame, kPageFlag_Writable)) {
+      if (!pagingMapPage(_heapEnd, frame, kPageFlag_Writable)) {
          pmmFreeFrame(frame);
          return false;
       }
 
-      g_heapEnd += kPageSize;
+      _heapEnd += kPageSize;
    }
 
    BlockHeader* freshBlock = (BlockHeader*)oldEnd;
-   freshBlock->size = (g_heapEnd - oldEnd) - sizeof(BlockHeader);
+   freshBlock->size = (_heapEnd - oldEnd) - sizeof(BlockHeader);
    freshBlock->free = true;
    freshBlock->next = nil;
 
-   BlockHeader* tail = g_heapHead;
+   BlockHeader* tail = _heapHead;
    while (tail->next)
       tail = tail->next;
    tail->next = freshBlock;
@@ -61,7 +61,7 @@ static bool _heapGrow(u32 minBytes)
 // walk through the heap, coalescing each neighboring free block into a single block
 void _heapCoalesce()
 {
-   BlockHeader* block = g_heapHead;
+   BlockHeader* block = _heapHead;
    while (block && block->next) {
       if (block->free && block->next->free) {
          block->size += sizeof(BlockHeader) + block->next->size;
@@ -86,11 +86,25 @@ void heapInit()
       if (!pagingMapPage(kHeapVirtualStart + offset, frame, kPageFlag_Writable))
          kernelPanic("heapInit: unable to map virtual heap frame %x", kHeapVirtualStart + offset);
    }
-   g_heapEnd  = kHeapVirtualStart + kHeapInitialSize;
-   g_heapHead = (BlockHeader*)kHeapVirtualStart;
-   g_heapHead->size = kHeapInitialSize - sizeof(BlockHeader);
-   g_heapHead->free = true;
-   g_heapHead->next = nil;
+   _heapEnd  = kHeapVirtualStart + kHeapInitialSize;
+   _heapHead = (BlockHeader*)kHeapVirtualStart;
+   _heapHead->size = kHeapInitialSize - sizeof(BlockHeader);
+   _heapHead->free = true;
+   _heapHead->next = nil;
+}
+
+u32 heapFreeBytes()
+{
+   u32 freeBytes = 0;
+   BlockHeader* block = _heapHead;
+   while (block != nil) {
+      if (block->free) 
+         freeBytes += block->size;
+
+      block = block->next;
+   }
+
+   return freeBytes;
 }
 
 // we want to round the size up to the nearest 8-byte multiple
@@ -101,7 +115,7 @@ void heapInit()
 // lastly, we claim the block and return a pointer to the block's data (skip header)
 void* kmalloc(u32 size)
 {
-   if (g_heapHead == nil)
+   if (_heapHead == nil)
       return nil;                      // heap is not initialized yet
 
    u32 request = (size + 7) & ~0x07;   // round size up to 8byte multiple

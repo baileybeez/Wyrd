@@ -9,3 +9,7 @@ typedef struct {
 } BufReader;
 
 Thread* execFromDisk(const Fat16Volume* vol, const char* path);
+
+#ifdef kIncludeSelfTests
+void lifecycleSelfTest(const Fat16Volume* vol, const char* path, i32 expectedCode);
+#endif
