@@ -21,7 +21,7 @@
 #include "mm/heap.h"
 #include "scheduler/thread.h"
 #include "scheduler/scheduler.h"
-#include "syscall.h"
+#include "syscall/syscall.h"
 
 #ifdef kIncludeSelfTests
 #include "drivers/ata/ata.h"

@@ -221,7 +221,26 @@ void pagingInvalidatePage(u32 virtualAddr)
    __asm__ volatile("invlpg (%0)" :: "r"(virtualAddr) : "memory");
 }
 
-AddressSpace*  addressSpaceCreate()
+bool pagingIsUserAccessible(u32 addr, bool needsWrite)
+{
+   u32 required = kPageFlag_Present | kPageFlag_User;
+   if (needsWrite)
+      required |= kPageFlag_Writable;
+
+   u32 dirIndex = addr >> 22;
+   u32 pde      = _pagingDirectory()[dirIndex];
+   if ((pde & required) != required)
+      return false;
+
+   u32 tableIndex = (addr >> 12) & 0x3FF;
+   u32 pte = _pagingTable(dirIndex)[tableIndex];
+   if ((pte & required) != required)
+      return false;
+   
+   return true;
+}
+
+AddressSpace* addressSpaceCreate()
 {
    AddressSpace* space = kmalloc(sizeof(AddressSpace));
    if (space == nil)

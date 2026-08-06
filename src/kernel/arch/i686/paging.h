@@ -20,6 +20,7 @@ bool           pagingMapPage(u32 virtualAddr, u32 physicalAddr, u32 flags);
 bool           pagingUnmapPage(u32 virtualAddr);
 bool           pagingReserveRange(u32 virtualStart, u32 virtualEnd);
 bool           pagingIsMapped(u32 virtualAddr);
+bool           pagingIsUserAccessible(u32 addr, bool needsWrite);
 u32            pagingGetPhysical(u32 virtualAddr);
 void           pagingInvalidatePage(u32 virtualAddr);
 void           pagingSealKernelPDEs();

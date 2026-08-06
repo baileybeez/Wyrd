@@ -6,7 +6,7 @@ void           schedulerInit();
 void           schedulerEnqueue(Thread* t);
 Thread*        schedulerCurrent();
 void           schedulerYield();
-kNoReturn void schedulerExitThread(i32 code);
+void           schedulerExitThread(i32 code) kNoReturn;
 void           schedulerSwitchAddressSpace(AddressSpace* space);
 AddressSpace*  schedulerCurrentSpace();
 u32            schedulerIdleCount();

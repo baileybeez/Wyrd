@@ -16,7 +16,6 @@ ASM_SRCS := entry.asm \
 			arch/i686/irq_stubs.asm \
 			scheduler/switchContext.asm 
 C_SRCS   := main.c \
-			syscall.c \
 			drivers/ata/ata.c \
 			drivers/input/keyboard.c \
 			drivers/input/keyboardMap.c \
@@ -43,11 +42,13 @@ C_SRCS   := main.c \
 			boot/bootInfo.c \
 			mm/pmm.c \
 			mm/heap.c \
+			mm/usercopy.c \
 			fs/fat16/fat16.c \
 			scheduler/thread.c \
 			scheduler/scheduler.c \
 			loader/elfSelfTest.c \
-			loader/lifecycleTests.c
+			loader/lifecycleTests.c \
+			syscall/syscall.c
 
 C_OBJS   := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SRCS))
 ASM_OBJS := $(patsubst %.asm,$(OBJ_DIR)/%.o,$(ASM_SRCS))
