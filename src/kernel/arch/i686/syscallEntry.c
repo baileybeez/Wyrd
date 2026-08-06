@@ -1,6 +1,6 @@
 #include "wyrd.h"
 #include "syscallEntry.h"
-#include "syscall.h"
+#include "syscall/syscall.h"
 #include "isr.h"
 
 static void _syscallTrap(Registers* regs)
