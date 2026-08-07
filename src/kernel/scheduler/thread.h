@@ -1,5 +1,6 @@
 #pragma once
 #include "wyrd.h"
+#include "sys.h"
 #include "arch/i686/paging.h"
 
 typedef enum {
@@ -16,10 +17,6 @@ typedef enum {
    kWaitErr_Self,
    kWaitErr_NotAChild,
 } WaitError;
-
-#define kExitFault      -1001
-#define kExitOutOfMem   -1002
-#define kExitKilled     -1003
 
 typedef struct {
    struct Thread* head;
