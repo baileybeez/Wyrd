@@ -22,3 +22,6 @@ docker-compose-override.yml
 
 # qemu testing
 logs/
+
+# root fs
+root/

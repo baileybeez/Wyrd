@@ -45,32 +45,50 @@ static u8* _execReadImage(const Fat16Volume* vol, const char* path, u32* outLen)
    return buffer;
 }
 
+static u32 _execBuildUserStackFrame(u32 stackTop)
+{
+   u32* sp = (u32*)stackTop;
+
+   *(--sp) = 0;      // envp[0]
+   *(--sp) = 0;      // argv[0]
+   *(--sp) = 0;      // argc
+
+   return (u32)sp;
+}
+
 static bool _execMapUserStack(AddressSpace* space, u32* outStackTop)
 {
-   u32 vaStack = kUserStackBase;
-
-   kTrace("execFromDisk: allocating/paging stack frame for user process");
-   u32 stackFrame = pmmAllocFrame();
-   if (stackFrame == kInvalidFrame)
-      return false;
+   kTrace("execFromDisk: mapping %u user stack pages", kUserStackPages);
 
    AddressSpace* prev = schedulerCurrentSpace();
    schedulerSwitchAddressSpace(space);
 
-   bool mapped = false;
-   if (!pagingIsMapped(vaStack)) {
-      mapped = pagingMapPage(vaStack, stackFrame, kPageFlag_Writable | kPageFlag_User);
-      if (mapped)
-         memset((void*)vaStack, 0x00, kPageSize);
+   bool ok = true;
+   for (u32 vaStack = kUserStackBase; vaStack < kUserStackTop; vaStack += kPageSize) {
+      if (pagingIsMapped(vaStack))
+         continue;
+
+      u32 stackFrame = pmmAllocFrame();
+      if (stackFrame == kInvalidFrame) {
+         ok = false;
+         break;
+      }
+
+      if (!pagingMapPage(vaStack, stackFrame, kPageFlag_Writable | kPageFlag_User)) {
+         pmmFreeFrame(stackFrame);
+         ok = false;
+         break;
+      }
+
+      memset((void*)vaStack, 0x00, kPageSize);
    }
    
+   u32 userEsp = _execBuildUserStackFrame(kUserStackTop);
    schedulerSwitchAddressSpace(prev);
-   if (!mapped) {
-      pmmFreeFrame(stackFrame);
+   if (!ok)
       return false;
-   }
 
-   *outStackTop = kUserStackTop;
+   *outStackTop = userEsp;
    return true;
 }
 
@@ -82,7 +100,7 @@ static bool _execMapUserStack(AddressSpace* space, u32* outStackTop)
 //       3.5. free buffer from disk image (#2)
 //    4. alloc a frame for a stack, map it into paging
 //    5. create the user thread
-Thread* execFromDisk(const Fat16Volume* vol, const char* path)
+Thread* execFromDisk(const Fat16Volume* vol, const char* path, ElfError* outError)
 {
    u32 fileSize = 0;
    u8* buffer = _execReadImage(vol, path, &fileSize);
@@ -103,6 +121,8 @@ Thread* execFromDisk(const Fat16Volume* vol, const char* path)
 
    if (elfErr != kElfErr_OK) {
       addressSpaceDestroy(space);
+      if (outError != nil)
+         *outError = elfErr;
       return nil;
    }
 
@@ -111,7 +131,7 @@ Thread* execFromDisk(const Fat16Volume* vol, const char* path)
       addressSpaceDestroy(space);
       return nil;
    }
-
+   
    Thread* thread = threadCreateUser(entryPoint, stackTop, space);
    if (thread == nil) {
       addressSpaceDestroy(space);

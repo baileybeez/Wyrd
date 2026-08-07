@@ -4,9 +4,14 @@
 
 #define kKernelVirtualBase 0xC0000000
 
-#define kUserStackPages    1
+#define kUserStackPages    8
 #define kUserStackTop      kKernelVirtualBase
-#define kUserStackBase     (kUserStackTop - (kUserStackPages * kPageSize))
+#define kUserStackSize     (kUserStackPages * kPageSize)
+#define kUserStackBase     (kUserStackTop - (kUserStackSize))
+#define kUserGuardPages    4
+#define kUserGuardSize     (kUserGuardPages * kPageSize)
+#define kUserGuardBase     ((kUserStackBase) - (kUserGuardSize))
+#define kUserHeapLimit     kUserGuardBase
 
 static inline u32 physToVirtual(u32 physAddr)
 {
