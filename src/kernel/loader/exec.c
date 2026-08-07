@@ -100,7 +100,7 @@ static bool _execMapUserStack(AddressSpace* space, u32* outStackTop)
 //       3.5. free buffer from disk image (#2)
 //    4. alloc a frame for a stack, map it into paging
 //    5. create the user thread
-Thread* execFromDisk(const Fat16Volume* vol, const char* path)
+Thread* execFromDisk(const Fat16Volume* vol, const char* path, ElfError* outError)
 {
    u32 fileSize = 0;
    u8* buffer = _execReadImage(vol, path, &fileSize);
@@ -121,6 +121,8 @@ Thread* execFromDisk(const Fat16Volume* vol, const char* path)
 
    if (elfErr != kElfErr_OK) {
       addressSpaceDestroy(space);
+      if (outError != nil)
+         *outError = elfErr;
       return nil;
    }
 
