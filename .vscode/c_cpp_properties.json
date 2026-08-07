@@ -8,7 +8,8 @@
          "defines": ["__GNUC__=13", "__i386__=1", "__ELF__=1"],
          "includePath": [
             "${workspaceFolder}/src/kernel",
-            "${workspaceFolder}/src/common"
+            "${workspaceFolder}/src/common",
+            "${workspaceFolder}/src/libs/libwyrd/include"
          ]
       }
    ],
