@@ -243,7 +243,7 @@ void kernelMain(BootInfo* bi)
    #endif
 
    kTrace("execFromDisk sample app");
-   Thread* thread = execFromDisk(&g_Vol, "/sample");
+   Thread* thread = execFromDisk(&g_Vol, "/sample", nil);
    if (thread == nil)
       kernelPanic("unable to locate exe :: '/sample'");
    

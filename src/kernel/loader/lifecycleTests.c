@@ -106,7 +106,7 @@ static void _lifecycleTierTwo(const Fat16Volume* vol, const char* path, i32 expe
    u32 heapBefore   = heapFreeBytes();
  
    for (u32 i = 0; i < kLifecycleIterations; i++) {
-      Thread* t = execFromDisk(vol, path);
+      Thread* t = execFromDisk(vol, path, nil);
       if (t == nil) {
          kError("[lifecycle] tier 2: execFromDisk failed at %u", i);
          return;
@@ -141,7 +141,7 @@ static void _lifecycleWaiterFirst(const Fat16Volume* vol, const char* path)
    u32 framesBefore = pmmFreeFrameCount();
    u32 heapBefore   = heapFreeBytes();
  
-   Thread* t = execFromDisk(vol, path);
+   Thread* t = execFromDisk(vol, path, nil);
    if (t == nil) {
       kError("[lifecycle] tier 3a: execFromDisk failed");
       return;
@@ -171,7 +171,7 @@ static void _lifecycleReaperFirst(const Fat16Volume* vol, const char* path)
    u32 framesBefore = pmmFreeFrameCount();
    u32 heapBefore   = heapFreeBytes();
  
-   Thread* t = execFromDisk(vol, path);
+   Thread* t = execFromDisk(vol, path, nil);
    if (t == nil) {
       kError("[lifecycle] tier 3b: execFromDisk failed");
       return;
@@ -226,6 +226,63 @@ static void _lifecycleErrorReturns()
    kTrace("[lifecycle] tier 3c: error returns checked");
 }
 
+typedef struct {
+   const char* path;
+   ElfError    expected;
+} BadElfCase;
+
+static const BadElfCase _badElves[] = {
+   { "/badelf/toosmall",   kElfErr_TooSmall          },
+   { "/badelf/notelf",     kElfErr_BadMagic          },
+   { "/badelf/badmagic",   kElfErr_BadMagic          },
+   { "/badelf/badclass",   kElfErr_Not32bit          },
+   { "/badelf/badendn",    kElfErr_BadEndian         },
+   { "/badelf/badtype",    kElfErr_NotExec           },
+   { "/badelf/badmach",    kElfErr_BadMachine        },
+   { "/badelf/phsize",     kElfErr_BadProgramHeader  },
+   { "/badelf/phcount",    kElfErr_BadProgramHeader  },
+   { "/badelf/badphdr",    kElfErr_BadProgramHeader  },
+   { "/badelf/entryhi",    kElfErr_BadEntry          },
+   { "/badelf/entrylo",    kElfErr_BadEntry          },
+   { "/badelf/badtrunc",   kElfErr_SegOutOfRange     },
+   { "/badelf/filesz",     kElfErr_SegOutOfRange     },
+};
+#define kBadElfCount 14
+
+void badElfTests(const Fat16Volume* vol)
+{
+   kTrace("[lifecycle] tier 4: hostile ELF fixtures");
+
+   for (u32 i = 0; i < kBadElfCount; i++) {
+      const BadElfCase* c = &_badElves[i];
+
+      u32 framesBefore = pmmFreeFrameCount();
+      ElfError err     = kElfErr_OK;
+
+      Thread* t = execFromDisk(vol, c->path, &err);
+      if (t != nil) {
+         kError("[lifecycle] tier 4: %s LOADED (expected error %u)", c->path, c->expected);
+         return;
+      }
+
+      if (err != c->expected) {
+         kError("[lifecycle] tier 4: %s returned %u, expected %u", c->path, err, c->expected);
+         return;
+      }
+
+      u32 framesAfter = pmmFreeFrameCount();
+      if (framesAfter != framesBefore) {
+         kError("[lifecycle] tier 4: %s leaked %i frames",
+            c->path, (i32)(framesBefore - framesAfter));
+         return;
+      }
+
+      kTrace("[lifecycle] tier 4: %s -> %u, no leak", c->path, err);
+   }
+
+   kTrace("[lifecycle] tier 4: all %u fixtures rejected cleanly", kBadElfCount);
+}
+
 void lifecycleSelfTest(const Fat16Volume* vol, const char* path, i32 expectedCode)
 {
    kTrace("[lifecycle] baseline frames=%u heap=%u", pmmFreeFrameCount(), heapFreeBytes());
@@ -235,6 +292,8 @@ void lifecycleSelfTest(const Fat16Volume* vol, const char* path, i32 expectedCod
    _lifecycleWaiterFirst(vol, path);
    _lifecycleReaperFirst(vol, path);
    _lifecycleErrorReturns();
+
+   badElfTests(vol);
  
    kTrace("[lifecycle] complete: frames=%u heap=%u", pmmFreeFrameCount(), heapFreeBytes());
 }
