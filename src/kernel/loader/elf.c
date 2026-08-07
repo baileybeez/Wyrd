@@ -32,9 +32,9 @@
 // type           2        file type    (0x02 == EXEC)
 // machine        2        architecture (0x03 == x86)
 // version        4        1
-#define kElfIdent_Class 5
-#define kElfIdent_Data  6
-#define kElfIdent_Ver   7
+#define kElfIdent_Class 4
+#define kElfIdent_Data  5
+#define kElfIdent_Ver   6
 
 static bool _elfRangeValid(u32 offset, u32 len, u32 limit)
 {
@@ -54,6 +54,8 @@ static ElfError _validateElfHeader(const ELF32Header* hdr, u32 imageLen)
       return kElfErr_Not32bit;
    if (hdr->ident[kElfIdent_Data] != kElfData_LittleEndian)
       return kElfErr_BadEndian;
+   if (hdr->ident[kElfIdent_Ver] != kElfVer)
+      return kElfErr_BadVersion;
    if (hdr->type != kElfType_Exec)
       return kElfErr_NotExec;
    if (hdr->machine != kElfMachine_x86)

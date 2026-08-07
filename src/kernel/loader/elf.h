@@ -15,7 +15,8 @@ typedef enum {
    kElfErr_NoMemory           = 9, 
    kElfErr_BadEndian          = 10,
    kElfErr_BadEntry           = 11,
-   kElfErr_BadArgument        = 12
+   kElfErr_BadArgument        = 12,
+   kElfErr_BadVersion         = 13
 } ElfError;
 
 typedef struct {
@@ -32,6 +33,7 @@ typedef struct {
    u16 phCount;      // program header entry count
    u16 shSize;       // section header's entry size
    u16 shCount;      // section header entry count
+   u16 shStrIndex;   // index of .shstrtab in the section header table
 } __attribute__((packed)) ELF32Header;
 
 typedef struct {
