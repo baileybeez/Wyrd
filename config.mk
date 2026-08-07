@@ -10,14 +10,24 @@ export ASM := nasm
 
 export TARGET := i686-elf
 
-export TARGET_CFLAGS := -std=c99 -g -ffreestanding -Wall -Wextra
+export TARGET_CFLAGS := -std=c99 -g -ffreestanding -Wall -Wextra -Wno-unused-parameter 
 export TARGET_LFLAGS :=
 export TARGET_LIBS   :=
+
+export USER_ARCH	 := -march=i686 -mtune=generic -m32
+export USER_NOFP	 := -mno-80387 -mno-mmx -mno-sse -mno-sse2
+export USER_CFLAGS	 := $(TARGET_CFLAGS) $(USER_ARCH) $(USER_NOFP) \
+						-fno-pic -fno-pie -fno-common -fno-stack-protector \
+						-fno-asynchronous-unwind-tables \
+						-fno-tree-loop-distribute-patterns \
+						-ffunction-sections -fdata-sections \
+						-MMD -MP
 
 export TARGET_CC      := $(TARGET)-gcc
 export TARGET_CXX 	  := $(TARGET)-g++
 export TARGET_LD  	  := $(TARGET)-gcc
 export TARGET_LINKER  := $(TARGET)-ld
+export TARGET_AR	  := $(TARGET)-ar
 export TARGET_OBJDUMP := $(TARGET)-objdump
 export TARGET_OBJCOPY := $(TARGET)-objcopy
 
