@@ -11,7 +11,7 @@ DEPS    := $(OBJS:.o=.d)
 CRT0	:= $(BUILD_DIR)/libs/crt0.o
 LIBWYRD := $(BUILD_DIR)/libs/libwyrd.a
 
-LINKER_SCRIPT := $(APP_SRC_DIR)/linker.ld
+LINKER_SCRIPT := $(SRC_DIR)/libs/libwyrd/user.ld
 
 INCLUDES := -I$(COMMON_SRC_DIR) -I$(SRC_DIR)/libs/libwyrd/include
 FEATURES := 

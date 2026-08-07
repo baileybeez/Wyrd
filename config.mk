@@ -10,7 +10,8 @@ export ASM := nasm
 
 export TARGET := i686-elf
 
-export TARGET_CFLAGS := -std=c99 -g -ffreestanding -Wall -Wextra -Wno-unused-parameter 
+export TARGET_CFLAGS := -std=c99 -g -ffreestanding -nostdlib -nostdinc \
+						-Wall -Wextra -Wno-unused-parameter 
 export TARGET_LFLAGS :=
 export TARGET_LIBS   :=
 
