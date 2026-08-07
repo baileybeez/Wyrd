@@ -21,15 +21,20 @@ kernel: | $(GCC_INSTALLED)
 	$(MAKE) -C $(SRC_DIR)/kernel
 
 grub-iso: kernel
-	$(MAKE) -C $(SRC_DIR)/boot/grub/ iso
+	$(MAKE) -C $(SRC_DIR)/boot/grub
 
-wyrd: kernel
-	$(MAKE) -C $(SRC_DIR)/boot/custom/ iso
+wyrd: kernel rootfs
+	$(MAKE) -C $(SRC_DIR)/boot/custom
+
+rootfs:
+	@mkdir -p $(ROOT_FS)/tmp
+	@mkdir -p $(ROOT_FS)/bin
+	@echo "hello from /tmp/file.txt via fat16" > $(ROOT_FS)/tmp/file.txt
 
 libs: 
 	$(MAKE) -C $(SRC_DIR)/libs/libwyrd
 
-apps: 
+apps: rootfs
 	$(MAKE) -C $(SRC_DIR)/user/sample
 
 clean:

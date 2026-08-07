@@ -45,21 +45,18 @@ CFLAGS			:= -m32 -ffreestanding -nostdlib -fno-pic -fno-stack-protector \
 LINKER_SCRIPT	:= $(CUSTOM_SRC)/linker.ld
 LIBS 			:= $(shell $(TARGET_CC) -print-libgcc-file-name)
 
-.PHONY: iso clean
+.PHONY: all clean
 
-iso: $(DISK_IMAGE)
+all: $(DISK_IMAGE)
 
-$(DISK_IMAGE): $(STAGE1_BIN) $(STAGE2_BIN) $(KERNEL_BIN)
+$(DISK_IMAGE): $(STAGE1_BIN) $(STAGE2_BIN) $(KERNEL_BIN) $(ROOT_FS)
 	dd if=/dev/zero of=$@ bs=1M count=$(DISK_SIZE_MB) status=none
 	mformat -i $@ $(VOLUME_FLAGS) -N $(VOLUME_ID) -v $(VOLUME_NAME) :: 
 	dd if=$(STAGE1_BIN) of=$@ bs=1 count=3 	 conv=notrunc
 	dd if=$(STAGE1_BIN) of=$@ bs=1 count=450 skip=62 seek=62 conv=notrunc
 	dd if=$(STAGE2_BIN) of=$@ bs=512 seek=1  conv=notrunc
 	mcopy -i $@ $(BUILD_DIR)/kernel/kernel.bin ::/KERNEL.BIN
-	echo "hello from /tmp/file.txt via fat16" > file.txt
-	mmd   -i $(DISK_IMAGE) ::/tmp
-	mcopy -i $(DISK_IMAGE) file.txt ::/tmp/file.txt
-	mcopy -i $(DISK_IMAGE) $(BUILD_DIR)/user/sample/sample ::/sample
+	mcopy -i $(DISK_IMAGE) $(ROOT_FS)/* ::/
 
 $(STAGE1_BIN): $(CUSTOM_SRC)/stage1.asm
 	@mkdir -p $(dir $@)

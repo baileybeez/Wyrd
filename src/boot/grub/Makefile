@@ -13,9 +13,9 @@ ISO_OUT      := $(BUILD_DIR)/wyrd.iso
 
 KERNEL_ELF   := $(BUILD_DIR)/kernel/kernel.elf
 
-.PHONY: iso clean
+.PHONY: all clean
 
-iso: $(ISO_OUT)
+all: $(ISO_OUT)
 
 $(ISO_OUT): $(KERNEL_ELF) $(GRUB_CFG_SRC)
 	@mkdir -p $(ISO_DIR)/boot/grub

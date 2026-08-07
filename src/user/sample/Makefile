@@ -19,7 +19,8 @@ CFLAGS   := $(USER_CFLAGS) $(FEATURES) $(INCLUDES)
 
 LDFLAGS  := -T $(LINKER_SCRIPT) -nostdlib -Wl,--gc-sections
 LIBS 	 := $(LIBWYRD) $(shell $(TARGET_CC) -print-libgcc-file-name)
-APP		 := $(APP_BUILD)/sample
+APPNAME  := sample
+APP		 := $(APP_BUILD)/$(APPNAME)
 
 .PHONY: all apps clean
 all: apps
@@ -29,6 +30,7 @@ apps: $(APP)
 $(APP): $(OBJS) $(LINKER_SCRIPT)
 	@mkdir -p $(dir $@)
 	$(TARGET_LD) $(LDFLAGS) -o $@ $(CRT0) $(OBJS) $(LIBS)
+	@cp $@ $(ROOT_FS)/$(APPNAME)
 
 $(OBJ_DIR)/%.o: $(APP_SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
