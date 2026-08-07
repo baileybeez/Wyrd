@@ -62,7 +62,7 @@ LINKER_SCRIPT := $(KERNEL_SRC_DIR)/linker.ld
 # 	kSerialTrace		:: includes support for debug console via serial (QEMU)
 FEATURES := -DkSerialTrace
 CFLAGS   := $(TARGET_CFLAGS) $(FEATURES) -I$(KERNEL_SRC_DIR) -I$(COMMON_SRC_DIR) -MMD -MP
-CFLAGS   += -g3 -gdwarf-4 -O0 -fno-omit-frame-pointer
+CFLAGS   += -g3 -gdwarf-4 -O0 -fno-omit-frame-pointer -fno-pic -fno-pie
 
 LDFLAGS  := -T $(LINKER_SCRIPT) -nostdlib
 LIBS     := -lgcc

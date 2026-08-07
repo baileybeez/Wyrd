@@ -1,4 +1,5 @@
 #include "wyrd.h"
+#include "sys.h"
 #include "arch/i686/arch.h"
 #include "arch/i686/cpu.h"
 #include "arch/i686/paging.h"
@@ -21,7 +22,6 @@
 #include "mm/heap.h"
 #include "scheduler/thread.h"
 #include "scheduler/scheduler.h"
-#include "syscall/syscall.h"
 
 #ifdef kIncludeSelfTests
 #include "drivers/ata/ata.h"
@@ -242,36 +242,15 @@ void kernelMain(BootInfo* bi)
    lifecycleSelfTest(&g_Vol, "/sample", 0);
    #endif
 
+   kTrace("execFromDisk sample app");
+   Thread* thread = execFromDisk(&g_Vol, "/sample");
+   if (thread == nil)
+      kernelPanic("unable to locate exe :: '/sample'");
+   
    // terminate the bootstrap thread
    kTrace("terminating boot thread"); 
    schedulerExitThread(0);
-   
-   // kTrace("execFromDisk sample app");
-   // Thread* thread = execFromDisk(&g_Vol, "/sample");
-   // if (thread == nil)
-   //    kernelPanic("unable to locate exe :: '/sample'");
-   //    
-// 
-   // // syscall (sysWrite) test
-   // const char* str = "Hello World\n";
-   // i32 n = syscall3(kSys_Write, (u32)str, 12, 0);
-   // kTrace("sys_write returned %d (excepted 11)", n);
-// 
-   // u32 prev = 0;
-   // while (true) {
-   //    KeyEvent ev;
-   //    if (keyboardTryReadKey(&ev))
-   //       putChar(ev.ascii);
-// 
-   //    u32 now = ticksGetCount();
-   //    if (now - prev >= 100) {
-   //       kTrace("tick: %u", now);
-   //       prev = now;
-   //    }
-   // }
-
-   // Halt
-   kernelPanic("- System Halted -");
+   kernelPanic("Execution continued after terminating boot thread");
    return;
 }
 
