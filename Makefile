@@ -26,8 +26,11 @@ grub-iso: kernel
 wyrd: kernel
 	$(MAKE) -C $(SRC_DIR)/boot/custom/ iso
 
+libs: 
+	$(MAKE) -C $(SRC_DIR)/libs/libwyrd
+
 apps: 
-	$(MAKE) -C $(SRC_DIR)/user/ apps
+	$(MAKE) -C $(SRC_DIR)/user/sample
 
 clean:
 	rm -rf $(BUILD_DIR)
