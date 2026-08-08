@@ -10,6 +10,7 @@ CRT0_SRC	:= $(SRC_DIR)/libs/libwyrd/crt
 
 SRCS		:= $(LIB_SRC)/io.c \
 			   $(LIB_SRC)/mem.c \
+			   $(LIB_SRC)/string.c \
 			   $(LIB_SRC)/syscall.c
 
 INC 		:= -I$(SRC_DIR)/libs/libwyrd/include -I$(SRC_DIR)/common
