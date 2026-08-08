@@ -22,6 +22,7 @@
 #include "mm/heap.h"
 #include "scheduler/thread.h"
 #include "scheduler/scheduler.h"
+#include "shell/shell.h"
 
 #ifdef kIncludeSelfTests
 #include "drivers/ata/ata.h"
@@ -153,7 +154,7 @@ static void _kernelCompanion()
    kForever {
       u32 now = ticksGetCount();
       if (now - prev >= 100) {
-         kTrace("[kernel] ticks=%u idle=%u", now, schedulerIdleCount());
+         //kTrace("[kernel] ticks=%u idle=%u", now, schedulerIdleCount());
          prev = now;
       }
    }
@@ -234,18 +235,21 @@ void kernelMain(BootInfo* bi)
    kTrace("spinning up kernel thread");
    threadCreate(_kernelCompanion);
 
-   kTrace("spinning up keyboard test thread");
-   threadCreate(_keyInTests);
+   // kTrace("spinning up keyboard test thread");
+   // threadCreate(_keyInTests);
+   
+   kTrace("shell init");
+   shellInit();
 
    #ifdef kIncludeSelfTests
    kTrace("spinning up Lifecycle Tests ...");
    lifecycleSelfTest(&g_Vol, "/sample", 0);
    #endif
 
-   kTrace("execFromDisk sample app");
-   Thread* thread = execFromDisk(&g_Vol, "/sample", nil);
-   if (thread == nil)
-      kernelPanic("unable to locate exe :: '/sample'");
+   // kTrace("execFromDisk sample app");
+   // Thread* thread = execFromDisk(&g_Vol, "/sample", nil);
+   // if (thread == nil)
+   //    kernelPanic("unable to locate exe :: '/sample'");
    
    // terminate the bootstrap thread
    kTrace("terminating boot thread"); 

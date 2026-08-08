@@ -48,7 +48,8 @@ C_SRCS   := main.c \
 			scheduler/scheduler.c \
 			loader/elfSelfTest.c \
 			loader/lifecycleTests.c \
-			syscall/syscall.c
+			syscall/syscall.c \
+			shell/shell.c
 
 C_OBJS   := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SRCS))
 ASM_OBJS := $(patsubst %.asm,$(OBJ_DIR)/%.o,$(ASM_SRCS))
