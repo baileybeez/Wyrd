@@ -16,7 +16,6 @@ STAGE2_BIN		:= $(CUSTOM_BUILD)/stage2.bin
 KERNEL_BIN		:= $(BUILD_DIR)/kernel/kernel.bin
 
 DISK_SIZE_MB	:= 10
-DISK_IMAGE		:= $(BUILD_DIR)/wyrd.img
 VOLUME_ID		:= B0EB0EB0
 VOLUME_NAME		:= "WYRD"
 VOLUME_FLAGS	:= -t 21 -h 16 -s 63 -c 1 -R 17 -r 32 -M 512 
@@ -56,7 +55,6 @@ $(DISK_IMAGE): $(STAGE1_BIN) $(STAGE2_BIN) $(KERNEL_BIN) $(ROOT_FS)
 	dd if=$(STAGE1_BIN) of=$@ bs=1 count=450 skip=62 seek=62 conv=notrunc
 	dd if=$(STAGE2_BIN) of=$@ bs=512 seek=1  conv=notrunc
 	mcopy -i $@ $(BUILD_DIR)/kernel/kernel.bin ::/KERNEL.BIN
-	mcopy -i $(DISK_IMAGE) $(ROOT_FS)/* ::/
 
 $(STAGE1_BIN): $(CUSTOM_SRC)/stage1.asm
 	@mkdir -p $(dir $@)

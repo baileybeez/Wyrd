@@ -25,6 +25,10 @@ grub-iso: kernel
 
 wyrd: kernel rootfs
 	$(MAKE) -C $(SRC_DIR)/boot/custom
+	mcopy -i $(DISK_IMAGE) $(ROOT_FS)/* ::/
+
+copyfs:
+	mcopy -i $(DISK_IMAGE) -o $(ROOT_FS)/* ::/
 
 rootfs:
 	@mkdir -p $(ROOT_FS)/tmp
@@ -36,6 +40,7 @@ libs:
 
 apps: rootfs
 	$(MAKE) -C $(SRC_DIR)/user/sample
+	$(MAKE) -C $(SRC_DIR)/user/strtests
 
 clean:
 	rm -rf $(BUILD_DIR)

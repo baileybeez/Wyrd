@@ -1,9 +1,10 @@
 # -
 
-export BUILD_DIR := $(abspath build)
-export SRC_DIR   := $(abspath src)
-export TEST_DIR  := $(abspath tests)
-export ROOT_FS	 := $(abspath root)
+export BUILD_DIR 	:= $(abspath build)
+export SRC_DIR   	:= $(abspath src)
+export TEST_DIR  	:= $(abspath tests)
+export ROOT_FS	 	:= $(abspath root)
+export DISK_IMAGE	:= $(BUILD_DIR)/wyrd.img
 
 JOBS ?= $(shell nproc)
 
