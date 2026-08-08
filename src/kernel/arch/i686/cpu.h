@@ -1,7 +1,6 @@
 #pragma once
 #include "wyrd.h"
 
-#define kForever     for(;;)
 #define kHalt()      kForever { __asm__ volatile("cli; hlt;"); }
 
 #define kEflags_IF   0x0200
