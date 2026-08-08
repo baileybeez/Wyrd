@@ -30,11 +30,6 @@ extern const char kScancodeToAsciiShift[128];
 #define kSC_LAlt        0x38
 #define kSC_CapsLock    0x3A
 
-#define kMod_Shift      0x01
-#define kMod_Ctrl       0x02
-#define kMod_Alt        0x04
-#define kMod_CapsLock   0x08
-
 typedef struct {
    KeyEvent    data[kBufSize];
    volatile u8 head;
