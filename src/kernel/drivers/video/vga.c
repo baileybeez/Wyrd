@@ -8,28 +8,29 @@
 #define kBackspace      '\b'
 
 const u16 kVGA_DefaultClearColor = (kColor_Black << 12) | (kColor_LightGray << 8);
-VGA g_vga = {0};
 
-void _vgaScrollUp();
-void _vgaLineFeed();
+VGA _vga = {0};
 
-void vgaInit()
+void _vgaScrollUp(void);
+void _vgaLineFeed(void);
+
+void vgaInit(void)
 {
-   g_vga.mem = kVideoMem;
-   g_vga.row = 0;
-   g_vga.col = 0;
-   g_vga.color = kVGA_DefaultClearColor;
+   _vga.mem = kVideoMem;
+   _vga.row = 0;
+   _vga.col = 0;
+   _vga.color = kVGA_DefaultClearColor;
    
    for (u16 y = 0; y < kVideoHeight; y++) {
       for (u16 x = 0; x < kVideoWidth; x++) {
-         g_vga.mem[y * kVideoWidth + x] = ' ' | g_vga.color;
+         _vga.mem[y * kVideoWidth + x] = ' ' | _vga.color;
       }
    }
 }
 
 void vgaSetColor(u8 fg, u8 bg)
 {
-   g_vga.color = (bg << 12) | (fg << 8);
+   _vga.color = (bg << 12) | (fg << 8);
 }
 
 void print(const char *s)
@@ -37,6 +38,12 @@ void print(const char *s)
    while (*s) {
       putChar(*s++);
    }
+}
+
+void printn(const char* s, u32 len)
+{
+   for (u32 i = 0; i < len ; i++)
+      putChar(s[i]);
 }
 
 void printf(const char* fmt, ...)
@@ -60,26 +67,26 @@ void putChar(char cb)
          _vgaLineFeed();
          break;
       case kCarriageReturn:
-         g_vga.col = 0;
+         _vga.col = 0;
          break;
       case kBackspace:
-         if (g_vga.col > 0) {
-            g_vga.col--;
-            g_vga.mem[g_vga.row * kVideoWidth + g_vga.col] = (u8)' ' | g_vga.color;
+         if (_vga.col > 0) {
+            _vga.col--;
+            _vga.mem[_vga.row * kVideoWidth + _vga.col] = (u8)' ' | _vga.color;
          }
          break;
       default:
-         if (g_vga.col >= kVideoWidth)
+         if (_vga.col >= kVideoWidth)
             _vgaLineFeed();
 
-         g_vga.mem[g_vga.row * kVideoWidth + g_vga.col++] = (u8)cb | g_vga.color;
+         _vga.mem[_vga.row * kVideoWidth + _vga.col++] = (u8)cb | _vga.color;
          break;
    }
 }
 
 void _vgaScrollUp()
 {
-   u16 *mem = g_vga.mem;
+   u16 *mem = _vga.mem;
    for (u16 y = 1; y < kVideoHeight; y++) {
         for (u16 x = 0; x < kVideoWidth; x++) {
             mem[(y - 1) * kVideoWidth + x] = mem[y * kVideoWidth + x];
@@ -87,16 +94,16 @@ void _vgaScrollUp()
     }
 
     for (u16 x = 0; x < kVideoWidth; x++) {
-        mem[(kVideoHeight- 1) * kVideoWidth + x] = ' ' | g_vga.color;
+        mem[(kVideoHeight- 1) * kVideoWidth + x] = ' ' | _vga.color;
     }
 }
 
 void _vgaLineFeed()
 {
-   if (g_vga.row + 1 < kVideoHeight)
-        g_vga.row++;
+   if (_vga.row + 1 < kVideoHeight)
+        _vga.row++;
     else 
         _vgaScrollUp();
 
-    g_vga.col = 0;
+    _vga.col = 0;
 }
