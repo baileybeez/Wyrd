@@ -160,15 +160,6 @@ static void _kernelCompanion()
    }
 }
 
-static void _keyInTests()
-{
-   kForever {
-      KeyEvent ev = keyboardReadKey();
-      putChar(ev.ascii);
-      kTrace("[keypress] ticks=%u idle=%u", ticksGetCount(), schedulerIdleCount());
-   }
-}
-
 void kernelMain(BootInfo* bi)
 {
    vgaInit();
@@ -232,14 +223,21 @@ void kernelMain(BootInfo* bi)
    elfSelfTest();
 #endif
    
+   kTrace("--- formatting test: %i", -678);
+
    kTrace("spinning up kernel thread");
    threadCreate(_kernelCompanion);
 
    // kTrace("spinning up keyboard test thread");
    // threadCreate(_keyInTests);
-   
-   kTrace("shell init");
-   shellInit();
+
+   kTrace("execFromDisk string tests app (strtests)");
+   Thread* thread = execFromDisk(&g_Vol, "/strtests", nil);
+   if (thread == nil)
+      kernelPanic("unable to locate exe :: '/strtests'");
+
+   // kTrace("shell init");
+   // shellInit();
 
    #ifdef kIncludeSelfTests
    kTrace("spinning up Lifecycle Tests ...");
