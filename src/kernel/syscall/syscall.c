@@ -2,6 +2,7 @@
 #include "sys.h"
 #include "syscall.h"
 #include "drivers/serial/serial.h"
+#include "drivers/video/vga.h"
 #include "mm/usercopy.h"
 #include "scheduler/scheduler.h"
 
@@ -31,6 +32,7 @@ static i32 _sysWrite(u32 fd, u32 ptr, u32 len)
          return kSysErr_Fault;
 
       serialWrite(buffer, chunk);
+      printn(buffer, chunk);
       offset += chunk;
       remaining -= chunk;
    }
