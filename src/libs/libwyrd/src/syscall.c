@@ -42,5 +42,5 @@ i32 write(i32 fd, const void* buffer, u32 len)
 i32 exit(i32 code)
 {
    _syscall1(kSyscall_Exit, code);
-   for(;;);
+   kForever;
 }

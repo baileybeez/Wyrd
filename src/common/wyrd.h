@@ -26,3 +26,4 @@ typedef unsigned char  bool;
 #define kUnused(x)   (void)x
 #define kNoReturn    __attribute__((noreturn))
 #define kPacked      __attribute__((packed))
+#define kForever     for(;;)

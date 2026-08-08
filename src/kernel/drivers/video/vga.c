@@ -63,10 +63,10 @@ void putChar(char cb)
          g_vga.col = 0;
          break;
       case kBackspace:
-         if (g_vga.col > 0)
+         if (g_vga.col > 0) {
             g_vga.col--;
-
-         g_vga.mem[g_vga.row * kVideoWidth + g_vga.col] = (u8)' ' | g_vga.color;
+            g_vga.mem[g_vga.row * kVideoWidth + g_vga.col] = (u8)' ' | g_vga.color;
+         }
          break;
       default:
          if (g_vga.col >= kVideoWidth)

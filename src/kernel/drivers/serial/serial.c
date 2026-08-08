@@ -32,7 +32,7 @@ static void _serialWriteCharInternal(char c)
 }
 #endif
 
-bool serialInit()
+bool serialInit(void)
 {
 #ifdef kSerialTrace
    outb(kCom1Port + 1, 0x00);
