@@ -84,7 +84,7 @@ start:
 
 .useLBA:
    mov   si, dap
-   mov   ah, 0x42                         ; 0x42 = LBA extensions option for INT 0x13
+   mov   ah, 0x42                ; 0x42 = LBA extensions option for INT 0x13
    mov   dl, [bootDrive]
    int   0x13
    jc    .diskError

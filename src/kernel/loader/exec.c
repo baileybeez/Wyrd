@@ -35,7 +35,8 @@ static u8* _execReadImage(const Fat16Volume* vol, const char* path, u32* outLen)
    if (buffer == nil)
       return nil;
 
-   fatErr = fat16ReadFile(vol, firstCluster, fileSize, (void*)buffer);
+   u32 bytesRead = 0;
+   fatErr = fat16ReadFileRange(vol, firstCluster, fileSize, 0, fileSize, (void*)buffer, &bytesRead);
    if (fatErr != kFatErr_OK) {
       kfree(buffer);
       return nil;
