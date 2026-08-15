@@ -134,8 +134,22 @@ static i32 _shellCmd_meminfo(u32 argc, char** argv)
 
 static i32 _shellCmd_ps(u32 argc, char** argv)
 {
-   // TODO: add a way to loop through thread registry and print each thread
-   // REQ: need thread name (app name) attached to thread object
+   kUnused(argc);
+   kUnused(argv);
+   
+   ProcessInfo info[kMaxThreads];
+   u32 count = 0;
+
+   printf("%6s %18s %6s %6s %s\n", "ID", "NAME", "PARENT", "STATE", "EXIT");
+   printf("------ ------------------ ------ ------ ----\n");
+
+   count = threadRegistrySnapshot(info, kMaxThreads);
+   for (u32 i = 0; i < count; i++) {
+      printf("%6u %18s %6u %6s %4i\n", 
+         info[i].id, info[i].name, info[i].parentId, 
+         threadStateName(info[i].state), info[i].exitCode);
+   }
+
    return 0;
 }
 
@@ -306,6 +320,6 @@ bool shellInit(void)
 {
    memset(_cwd, 0x00, kMaxPath);
    strcpy(_cwd, "/");
-   _thread = threadCreate(_shellThread);
+   _thread = threadCreate(_shellThread, "shell");
    return _thread != nil;
 }
