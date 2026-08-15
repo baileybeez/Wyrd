@@ -3,3 +3,4 @@
 
 void ticksInit(u32 hz);
 u32  ticksGetCount();
+u32  ticksGetHz();
