@@ -1,17 +1,181 @@
 #include "wyrd.h"
 #include "shell.h"
+#include "arch/i686/ticks.h"
 #include "drivers/input/keyboard.h"
 #include "drivers/serial/serial.h"
 #include "drivers/video/vga.h"
+#include "fs/vfs/vfs.h"
 #include "lib/logger.h"
+#include "lib/mem.h"
+#include "mm/heap.h"
+#include "mm/pmm.h"
 #include "scheduler/scheduler.h"
 #include "scheduler/thread.h"
+#include "string.h"
 
 #define kBackspace    '\b'
 
+#define kMaxPath      256
 #define kShellMaxLine 256
+#define kMaxArgs      8
+
+#define kShellCmd_Invalid  0
+#define kShellCmd_ls       1
+#define kShellCmd_cd       2
+#define kShellCmd_meminfo  3
+#define kShellCmd_ps       4
+#define kShellCmd_clear    5
+#define kShellCmd_uptime   6
+
+#define kShellCmd_Count    7
+
+typedef i32 (*ShellCmd)(u32, char**);
+
+typedef struct {
+   char  buffer[kShellMaxLine];
+   char* args[kMaxArgs + 1];
+   u32   argc;
+} CmdLine;
+
+typedef struct {
+   char     name[kShellMaxLine];
+   ShellCmd fnc;
+} ShellBuiltin;
 
 static Thread* _thread = nil;
+static char    _cwd[kMaxPath];
+
+static i32 _shellCmd_ls(u32 argc, char** argv)
+{
+   Dir      dir   = {0};
+   DirEntry entry = {0};
+   VfsError err;
+   
+   err = vfsDirOpen(_cwd, &dir);
+   if (err != kVfsErr_OK)
+      return 1;
+
+   while ((err = vfsDirRead(&dir, &entry)) == kVfsErr_OK) {
+      printf("%s\n", entry.name);
+   }
+   vfsDirClose(&dir);
+
+   return 0;
+}
+
+static void _shellCwdPop(void)
+{
+   u32 len = strlen(_cwd);
+   if (len <= 1) {
+      return;
+   }
+
+   u32 i = len - 1;
+   while (i > 0 && _cwd[i - 1] != '/') {
+      i--;
+   }
+   _cwd[i] = '\0';
+}
+
+static i32 _shellCmd_cd(u32 argc, char** argv)
+{
+   if (argc == 1) {
+      printf(_cwd);
+      printf("\n");
+      return 0;
+   } 
+
+   if (strcmp(argv[1], ".") == 0) {
+      return 0;
+   }
+
+   if (strcmp(argv[1], "..") == 0) {
+      _shellCwdPop();
+      return 0;
+   }
+
+   Dir      dir   = {0};
+   DirEntry entry = {0};
+   VfsError err;
+   
+   err = vfsDirOpen(_cwd, &dir);
+   if (err != kVfsErr_OK)
+      return 1;
+
+   u32 ret = 1;
+   while ((err = vfsDirRead(&dir, &entry)) == kVfsErr_OK) {
+      if (strcmp(argv[1], entry.name) == 0) {
+         strcat(_cwd, entry.name);
+         strcat(_cwd, "/");
+         ret = 0;
+         break;
+      }
+   }
+   vfsDirClose(&dir);
+   if (ret != 0)
+      printf("dir not found!");
+
+   return ret;
+}
+
+static const char* _sizeSuffix[5] = { "", "KB", "MB", "GB", "TB" };
+static i32 _shellCmd_meminfo(u32 argc, char** argv)
+{
+   u32 v = heapFreeBytes();
+   u32 i = 0;
+   while (v > 1024 && i < 4) {
+      i++;
+      v /= 1024;
+   }
+
+   printf("meminfo: free frames= %u free heap= %u %s\n", pmmFreeFrameCount(), v, _sizeSuffix[i]);
+   return 0;
+}
+
+static i32 _shellCmd_ps(u32 argc, char** argv)
+{
+   // TODO: add a way to loop through thread registry and print each thread
+   // REQ: need thread name (app name) attached to thread object
+   return 0;
+}
+
+static i32 _shellCmd_clear(u32 argc, char** argv)
+{
+   kUnused(argc);
+   kUnused(argv);
+   vgaClear();
+   return 0;
+}
+
+static i32 _shellCmd_uptime(u32 argc, char** argv)
+{
+   kUnused(argc);
+   kUnused(argv);
+   
+   u32 u = ticksGetCount() / ticksGetHz();
+
+   u32 s = u % 60;
+   u /= 60;
+
+   u32 m = u % 60;
+   u /= 60;
+
+   u32 h = u;
+
+   printf("system uptime: %u h, %u m, %u s\n", h, m, s);
+   return 0;
+}
+
+static const ShellBuiltin kShellCommands[kShellCmd_Count] =
+{
+   [kShellCmd_Invalid]     = { .name = "",         .fnc = nil },
+   [kShellCmd_ls]          = { .name = "ls",       .fnc = _shellCmd_ls },
+   [kShellCmd_cd]          = { .name = "cd",       .fnc = _shellCmd_cd },
+   [kShellCmd_meminfo]     = { .name = "meminfo",  .fnc = _shellCmd_meminfo },
+   [kShellCmd_ps]          = { .name = "ps",       .fnc = _shellCmd_ps }, 
+   [kShellCmd_clear]       = { .name = "clear",    .fnc = _shellCmd_clear },
+   [kShellCmd_uptime]      = { .name = "uptime",   .fnc = _shellCmd_uptime }
+};
 
 static void _shellEcho(char c)
 {
@@ -59,20 +223,89 @@ static void _shellReadLine(char outLine[kShellMaxLine], u32* outLen)
    }
 }
 
+// split apart the cmdline into 'cmd', 'argc', 'argv'
+// + collapses multiple spaces between args
+// - currently no support for quoted params or escaping
+static void _shellParseLine(const char* line, u32 len, CmdLine* outCmd)
+{
+   if (len >= kShellMaxLine) {
+      len = kShellMaxLine - 1;
+   }
+   memcpy(outCmd->buffer, line, len);
+   outCmd->buffer[len] = '\0';
+
+   char* p = outCmd->buffer;
+   char* end = outCmd->buffer + len;
+   while (p < end && outCmd->argc < kMaxArgs) {
+      while (p < end && *p == ' ') {
+         *p++ = '\0';
+      }
+      if (p == end) {
+         break;
+      }
+
+      outCmd->args[outCmd->argc++] = p;
+      while (p < end && *p != ' ') {
+         p++;
+      }
+   }
+
+   outCmd->args[outCmd->argc] = nil;
+}
+
+static ShellCmd _shellLookupInternalCmd(const char* cmd)
+{
+   for (u32 i = 0; i < kShellCmd_Count; i++) {
+      if (strcmp(cmd, kShellCommands[i].name) == 0)
+         return kShellCommands[i].fnc;
+   }
+
+   return nil;
+}
+
+static void _shellDispatchLine(const char* line, u32 len)
+{
+   CmdLine cmdLine = {0};
+   _shellParseLine(line, len, &cmdLine);
+   if (cmdLine.argc == 0)
+      return;
+   
+   ShellCmd fnc = _shellLookupInternalCmd(cmdLine.buffer);
+   if (fnc != nil) {
+      fnc(cmdLine.argc, cmdLine.args);
+   } else {
+      // lookup elf in cwd
+      // lookup elf in 'bin' dir
+      // else -> print error msg
+   } 
+   // printf("%s: ", cmdLine.cmd);
+   // for (u32 i = 0; i < cmdLine.argc; i++) {
+   //    printf(cmdLine.args[i]);
+   //    if (i + 1 < cmdLine.argc)
+   //       printf(", ");
+   // }   
+   // putChar('\n');
+}
+
 static void _shellThread(void) 
 {
    char line[kShellMaxLine] = {0};
-   u32  len = 0;
+   u32  len  = 0;
+
    kForever {
       print("> ");
       _shellReadLine(line, &len);
-      print(line);
-      putChar('\n');
+      if (len > 0) 
+         _shellDispatchLine(line, len);
+      
+      kTrace("[kernel] ticks=%u idle=%u", ticksGetCount(), schedulerIdleCount());
    }
 }
 
 bool shellInit(void)
 {
+   memset(_cwd, 0x00, kMaxPath);
+   strcpy(_cwd, "/");
    _thread = threadCreate(_shellThread);
    return _thread != nil;
 }
