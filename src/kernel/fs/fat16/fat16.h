@@ -69,7 +69,7 @@ typedef struct {
    u32   maxHops;
    u32   hopCount;
    bool  isRoot;
-   u8    scratch[kFat16_BytesPerSector] __attribute__((aligned(8)));
+   u8*   scratch; // [kFat16_BytesPerSector] __attribute__((aligned(8)));
 } Fat16DirIterator;
 
 typedef struct {
@@ -83,11 +83,12 @@ Fat16Error fat16Mount(Fat16Volume* vol, Fat16ReadSectorsFn fncReadSectors,
                       void* fatBuffer, u32 fatBufferSize, 
                       void* rootDirBuffer, u32 rootDirBufferSize);
 Fat16Error fat16NameTo8_3(const char* name, u8 out[kFat16_NameLen]);
+Fat16Error fat168_3ToName(u8 str8_3[kFat16_NameLen], char outName[kFat16_MaxComponentLen]);
 Fat16Error fat16FindInDir(const Fat16Volume* vol, Fat16DirRef dir, const u8 name8_3[kFat16_NameLen], Fat16DirEntry* out);
 Fat16Error fat16FindFile(const Fat16Volume* vol, const char* path, u16* outFirstCluster, u32* outFileSize);
 Fat16Error fat16ReadFileRange(const Fat16Volume* vol, u16 firstCluster, u32 fileSize,
                               u32 offset, u32 len, void* dest, u32* outBytesRead);
-Fat16Error fat16DirIterInit(const Fat16Volume* vol, Fat16DirRef dir, Fat16DirIterator* outIter);
+Fat16Error fat16DirIterInit(const Fat16Volume* vol, Fat16DirRef dir, u8* scratch, Fat16DirIterator* outIter);
 Fat16Error fat16DirIterNext(const Fat16Volume* vol, Fat16DirIterator* iter);
 const Fat16DirEntry* fat16DirIterEntry(const Fat16DirIterator* iter);
 

@@ -68,55 +68,6 @@ static u8 _fat16ToLower(u8 c)
    return c;
 }
 
-Fat16Error fat168_3ToName(u8 str8_3[kFat16_NameLen], char outName[kFat16_MaxComponentLen])
-{
-   if (str8_3[0] == ' ')
-      return kFatErr_BadName;
-
-   u32 idx = 0;
-   for (u32 i = 0; i < kFat16_BaseLen && str8_3[i] != ' '; i++) {
-      outName[idx++] = _fat16ToLower(str8_3[i]);
-   }
-   outName[idx++] = '.';
-   for (u32 i = kFat16_BaseLen; i < kFat16_NameLen && str8_3[i] != ' '; i++) {
-      outName[idx++] = _fat16ToLower(str8_3[i]);
-   }
-   outName[idx] = '\0';
-   return kFatErr_OK;
-}
-
-Fat16Error fat16NameTo8_3(const char* name, u8 out[kFat16_NameLen])
-{
-   for (u32 i = 0; i < kFat16_NameLen; i++)
-      out[i] = ' ';
-
-   if (name == nil || name[0] == '\0' || name[0] == kExtSep)
-      return kFatErr_BadName;
-
-   u32 i = 0;
-   u32 baseLen = 0;
-   while (name[i] != '\0' && name[i] != kExtSep) {
-      if (baseLen >= kFat16_BaseLen)
-         return kFatErr_BadName;
-      out[baseLen++] = _fat16ToUpper((u8)name[i++]);
-   }
-
-   if (name[i] == '\0')
-      return kFatErr_OK;
-
-   ++i;
-   u32 extLen = 0;
-   while (name[i] != '\0') {
-      if (name[i] == kExtSep)
-         return kFatErr_BadName;
-      if (extLen >= kFat16_ExtLen)
-         return kFatErr_BadName;
-      out[kFat16_BaseLen + extLen++] = _fat16ToUpper((u8)name[i++]);
-   }
-
-   return kFatErr_OK;
-}
-
 static bool _fat16DirEntryMatches(const Fat16DirEntry* entry, const u8 name[kFat16_NameLen])
 {
    for (u32 i = 0; i < kFat16_NameLen; i++) {
@@ -243,12 +194,13 @@ Fat16Error fat16Mount(Fat16Volume* vol, Fat16ReadSectorsFn fncReadSectors,
    return kFatErr_OK;
 }
 
-Fat16Error fat16DirIterInit(const Fat16Volume* vol, Fat16DirRef dir, Fat16DirIterator* out)
+Fat16Error fat16DirIterInit(const Fat16Volume* vol, Fat16DirRef dir, u8* scratch, Fat16DirIterator* out)
 {
    out->isRoot = dir.isRoot;
    out->entryIndex     = 0;
    out->hopCount       = 0;
    out->clusterOffset  = 0;
+   out->scratch        = scratch;
    if (out->isRoot) {
       out->base           = (const Fat16DirEntry*)vol->rootDir;
       out->count          = vol->rootEntCount;
@@ -310,8 +262,10 @@ const Fat16DirEntry* fat16DirIterEntry(const Fat16DirIterator* iter)
 
 Fat16Error fat16FindInDir(const Fat16Volume* vol, Fat16DirRef dir, const u8 name8_3[kFat16_NameLen], Fat16DirEntry* out)
 {
+   u8 scratch[kFat16_BytesPerSector] __attribute__((aligned(8)));
+
    Fat16DirIterator iter;
-   Fat16Error err = fat16DirIterInit(vol, dir, &iter);
+   Fat16Error err = fat16DirIterInit(vol, dir, scratch, &iter);
    if (err == kFatErr_OK) {
       const Fat16DirEntry* entry;
       while (err == kFatErr_OK) {
@@ -434,7 +388,8 @@ Fat16Error fat16ReadFileRange(const Fat16Volume* vol, u16 firstCluster, u32 file
             return kFatErr_DiskRead;
 
          memcpy(out, scratch + offInSector, head);
-         done += head;
+         done          += head;
+         *outBytesRead += head;
          lba++;
       }
 
@@ -475,6 +430,59 @@ Fat16Error fat16ReadFileRange(const Fat16Volume* vol, u16 firstCluster, u32 file
    return kFatErr_OK;
 }
 
+Fat16Error fat168_3ToName(u8 str8_3[kFat16_NameLen], char outName[kFat16_MaxComponentLen])
+{
+   if (str8_3[0] == ' ')
+      return kFatErr_BadName;
+
+   u32 idx = 0;
+   for (u32 i = 0; i < kFat16_BaseLen && str8_3[i] != ' '; i++) {
+      outName[idx++] = _fat16ToLower(str8_3[i]);
+   }
+
+   char c = str8_3[kFat16_BaseLen];
+   if (c != '\0' && c != ' ')
+      outName[idx++] = '.';
+
+   for (u32 i = kFat16_BaseLen; i < kFat16_NameLen && str8_3[i] != ' '; i++) {
+      outName[idx++] = _fat16ToLower(str8_3[i]);
+   }
+   outName[idx] = '\0';
+   return kFatErr_OK;
+}
+
+Fat16Error fat16NameTo8_3(const char* name, u8 out[kFat16_NameLen])
+{
+   for (u32 i = 0; i < kFat16_NameLen; i++)
+      out[i] = ' ';
+
+   if (name == nil || name[0] == '\0' || name[0] == kExtSep)
+      return kFatErr_BadName;
+
+   u32 i = 0;
+   u32 baseLen = 0;
+   while (name[i] != '\0' && name[i] != kExtSep) {
+      if (baseLen >= kFat16_BaseLen)
+         return kFatErr_BadName;
+      out[baseLen++] = _fat16ToUpper((u8)name[i++]);
+   }
+
+   if (name[i] == '\0')
+      return kFatErr_OK;
+
+   ++i;
+   u32 extLen = 0;
+   while (name[i] != '\0') {
+      if (name[i] == kExtSep)
+         return kFatErr_BadName;
+      if (extLen >= kFat16_ExtLen)
+         return kFatErr_BadName;
+      out[kFat16_BaseLen + extLen++] = _fat16ToUpper((u8)name[i++]);
+   }
+
+   return kFatErr_OK;
+}
+
 #ifdef kIncludeSelfTests
 #include "drivers/serial/serial.h"
 
@@ -497,8 +505,9 @@ void fat16SelfTest(const Fat16Volume* vol)
 
    serialPrintf("[FAT16] found: firstCluster=%x size=%x bytes\n", cluster, size);
 
-   u32 toRead = min(size, (u32)(kFat16_SelfTestBufSize - 1));
-   err = fat16ReadFileRange(vol, cluster, size, 0, toRead, buffer);
+   u32 toRead    = min(size, (u32)(kFat16_SelfTestBufSize - 1));
+   u32 bytesRead = 0;
+   err = fat16ReadFileRange(vol, cluster, size, 0, toRead, buffer, &bytesRead);
    if (err != kFatErr_OK) {
       serialPrintf("[FAT16] selftest: FAIL - fat16ReadFileRange returned %x\n", err);
       return;
