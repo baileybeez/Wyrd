@@ -3,23 +3,30 @@
 #include "pit.h"
 #include "scheduler/scheduler.h"
 
-static volatile u32 g_ticks = 0;
+static volatile u32 _ticks = 0;
+static u32 _hz = 0;
 
 static void tickHandler(Registers* regs)
 {
    kUnused(regs);
-   g_ticks++;
+   _ticks++;
    schedule();
 }
 
 void ticksInit(u32 hz)
 {
-   g_ticks = 0;
+   _hz = hz;
+   _ticks = 0;
    irqRegister(0, tickHandler);
    pitSetFrequency(hz);
 }
 
 u32 ticksGetCount() 
 {
-   return g_ticks;
+   return _ticks;
+}
+
+u32 ticksGetHz() 
+{
+   return _hz;
 }

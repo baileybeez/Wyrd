@@ -37,7 +37,7 @@ S2_ASM_OBJS 	:= $(patsubst %.asm,$(STAGE2_OBJDIR)/%.o,$(STAGE2_ASM))
 SHARED_OBJS		:= $(patsubst $(KERNEL_SRC)/%.c,$(STAGE2_OBJDIR)/shared/%.o,$(SHARED_C))
 STAGE2_OBJS		:= $(S2_ASM_OBJS) $(S2_C_OBJS) $(SHARED_OBJS)
 
-FEATURES		:= 
+FEATURES		:= -DkSerialTrace
 CFLAGS			:= -m32 -ffreestanding -nostdlib -fno-pic -fno-stack-protector \
                    -fno-builtin -Wall -Wextra -O2 $(FEATURES) -I $(INCLUDE_COMMON) -I $(KERNEL_SRC)
 

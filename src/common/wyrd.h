@@ -22,6 +22,7 @@ typedef unsigned char  bool;
 #define max(a, b)   ((a) > (b) ? (a) : (b))
 
 #define kLowHighToU64(high, low) (u64)(((u64)high << 16) | low)
+#define kLowHighToU32(high, low) (u32)(((u32)high << 8 ) | low)
 
 #define kUnused(x)   (void)x
 #define kNoReturn    __attribute__((noreturn))

@@ -57,8 +57,8 @@ void stage2Main(u32 bootDrive)
       goto halt;
    }
 
-   serialPrintf("[FAT] mounted: fatLba=%d rootLba=%d dataLba=%d bpc=%d\n",
-      vol.fatStartLba, vol.rootDirStartLba, vol.dataStartLba, vol.bytesPerCluster);
+   serialPrintf("[FAT] mounted: fatLba=%d rootLba=%d dataLba=%d bpc=%d clusterCount=%d\n",
+      vol.fatStartLba, vol.rootDirStartLba, vol.dataStartLba, vol.bytesPerCluster, vol.clusterCount);
 
    u16 firstCluster;
    u32 fileSize;
@@ -69,7 +69,8 @@ void stage2Main(u32 bootDrive)
    }
    serialPrintf("[FAT] KERNEL.BIN cluster=%d size=%d\n", firstCluster, fileSize);
 
-   err = fat16ReadFile(&vol, firstCluster, fileSize, (void*)kKernelLoadAddr);
+   u32 bytesRead = 0;
+   err = fat16ReadFileRange(&vol, firstCluster, fileSize, 0, fileSize, (void*)kKernelLoadAddr, &bytesRead);
    if (err != kFatErr_OK) {
       serialPrintf("[FAT] readFile err=%d", err);
       goto halt;

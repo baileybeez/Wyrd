@@ -13,6 +13,8 @@
 #include "drivers/serial/serial.h"
 #include "drivers/video/vga.h"
 #include "fs/fat16/fat16.h"
+#include "fs/vfs/fat16backend.h"
+#include "fs/vfs/vfs.h"
 #include "loader/exec.h"
 #include "lib/logger.h"
 #include "lib/mem.h"
@@ -32,9 +34,9 @@
 extern u32 _kernelStart;
 extern u32 _kernelPhysicalEnd;
 
-static Fat16Volume  g_Vol;
-static u8           g_FatBuffer[64 * 1024];
-static u8           g_RootDirBuffer[16 * 1024];
+static Fat16Volume  _vol;
+static u8           _FatBuffer[64 * 1024];
+static u8           _RootDirBuffer[16 * 1024];
 
 
 void stressTestPMM()
@@ -148,17 +150,17 @@ void testHeap()
    }
 }
 
-static void _kernelCompanion()
-{
-   u32 prev = 0;
-   kForever {
-      u32 now = ticksGetCount();
-      if (now - prev >= 100) {
-         //kTrace("[kernel] ticks=%u idle=%u", now, schedulerIdleCount());
-         prev = now;
-      }
-   }
-}
+// static void _kernelCompanion()
+// {
+//    u32 prev = 0;
+//    kForever {
+//       u32 now = ticksGetCount();
+//       if (now - prev >= 100) {
+//          kTrace("[kernel] ticks=%u idle=%u", now, schedulerIdleCount());
+//          prev = now;
+//       }
+//    }
+// }
 
 void kernelMain(BootInfo* bi)
 {
@@ -210,12 +212,12 @@ void kernelMain(BootInfo* bi)
 #endif
 
    // FAT16
-   Fat16Error err = fat16Mount(&g_Vol, ataReadSectors, g_FatBuffer, sizeof g_FatBuffer, g_RootDirBuffer, sizeof g_RootDirBuffer);
+   Fat16Error err = fat16Mount(&_vol, ataReadSectors, _FatBuffer, sizeof(_FatBuffer), _RootDirBuffer, sizeof(_RootDirBuffer));
    if (err != kFatErr_OK) {
       serialPrintf("[FAT16] mount failed: %x\n", err);
 #ifdef kIncludeSelfTests
    } else {
-      fat16SelfTest(&g_Vol);
+      fat16SelfTest(&_vol);
 #endif
    }
 
@@ -223,33 +225,23 @@ void kernelMain(BootInfo* bi)
    elfSelfTest();
 #endif
    
-   kTrace("--- formatting test: %i", -678);
-
-   kTrace("spinning up kernel thread");
-   threadCreate(_kernelCompanion);
-
-   // kTrace("spinning up keyboard test thread");
-   // threadCreate(_keyInTests);
-
-   kTrace("execFromDisk string tests app (strtests)");
-   Thread* thread = execFromDisk(&g_Vol, "/strtests", nil);
-   if (thread == nil)
-      kernelPanic("unable to locate exe :: '/strtests'");
-
-   // kTrace("shell init");
-   // shellInit();
-
    #ifdef kIncludeSelfTests
    kTrace("spinning up Lifecycle Tests ...");
-   lifecycleSelfTest(&g_Vol, "/sample", 0);
-   #endif
+   lifecycleSelfTest(&_vol, "/sample", 0);
 
-   // kTrace("execFromDisk sample app");
-   // Thread* thread = execFromDisk(&g_Vol, "/sample", nil);
-   // if (thread == nil)
-   //    kernelPanic("unable to locate exe :: '/sample'");
+   kTrace("execFromDisk string tests app (strtests)");
+   Thread* thread = execFromDisk(&_vol, "/strtests", nil);
+   if (thread == nil)
+      kernelPanic("unable to locate exe :: '/strtests'");
+   #endif
    
-   // terminate the bootstrap thread
+   kTrace("init vfs");
+   if (vfsInit(vfsMountFat16(&_vol)))
+      kernelPanic("Unable to initialize VFS");
+   
+   kTrace("shell init");
+   shellInit();
+
    kTrace("terminating boot thread"); 
    schedulerExitThread(0);
    kernelPanic("Execution continued after terminating boot thread");

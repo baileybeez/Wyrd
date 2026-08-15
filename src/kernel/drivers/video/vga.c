@@ -6,6 +6,7 @@
 #define kLineFeed       '\n'
 #define kCarriageReturn '\r'
 #define kBackspace      '\b'
+#define kTab            '\t'
 
 const u16 kVGA_DefaultClearColor = (kColor_Black << 12) | (kColor_LightGray << 8);
 
@@ -21,11 +22,19 @@ void vgaInit(void)
    _vga.col = 0;
    _vga.color = kVGA_DefaultClearColor;
    
+   vgaClear();
+}
+
+void vgaClear(void)
+{
    for (u16 y = 0; y < kVideoHeight; y++) {
       for (u16 x = 0; x < kVideoWidth; x++) {
          _vga.mem[y * kVideoWidth + x] = ' ' | _vga.color;
       }
    }
+
+   _vga.row = 0;
+   _vga.col = 0;
 }
 
 void vgaSetColor(u8 fg, u8 bg)
@@ -73,6 +82,16 @@ void putChar(char cb)
          if (_vga.col > 0) {
             _vga.col--;
             _vga.mem[_vga.row * kVideoWidth + _vga.col] = (u8)' ' | _vga.color;
+         }
+         break;
+      case kTab: {
+            if (_vga.col % 5 == 0)
+               _vga.col += 5;
+            else 
+               _vga.col = (_vga.col + 4) / 5 * 5;
+               
+            if (_vga.col >= kVideoWidth)
+               _vgaLineFeed();
          }
          break;
       default:

@@ -6,18 +6,9 @@
 #define kPathSep  '/'
 
 #define kFat16_BootSignature   0xAA55
-#define kFat16_BytesPerSector  512
-#define kFat16_DirEntrySize    32
-#define kFat16_NameLen         11
-#define kFat16_BaseLen         8
-#define kFat16_ExtLen          3
-#define kFat16_MaxComponentLen 13
 #define kFat16_MaxFatSectors   128
 #define kFat16_EocMin          0xFFF8
 #define kFat16_BadCluster      0xFFF7
-#define kFat16_AttrVolumeId    0x08
-#define kFat16_AttrLfnMask     0x0F
-#define kFat16_AttrDirectory   0x10
 #define kFat16_DirEntryFree    0xE5
 #define kFat16_DirEntryEnd     0x00
 
@@ -36,98 +27,62 @@ typedef struct {
    u16 numHeads;
    u32 hiddenSectors;
    u32 totSec32;
-
 } __attribute__((packed)) Fat16BPB;
+_Static_assert(sizeof(Fat16BPB) == 36, "BPB struct is invalid size");
 
-typedef struct {
-   u8  name[11];
-   u8  attr;
-   u8  ntRes;
-   u8  crtTimeTenth;
-   u16 crtTime;
-   u16 crtDate;
-   u16 lstAccDate;
-   u16 firstClusterHigh;
-   u16 wrtTime;
-   u16 wrtDate;
-   u16 firstClusterLow;
-   u32 fileSize;
-} __attribute__((packed)) Fat16DirEntry;
+static u16 _fat16FatEntry(const Fat16Volume* vol, u16 cluster)
+{
+   u32 count = ((u32)vol->fatSize16 * vol->bytesPerSector) / 2;
+   if (cluster >= count)
+      return kFat16_BadCluster;
 
-typedef struct {
-   bool isRoot;
-   u16  startCluster;
-} Fat16DirRef;
+   return vol->fat[cluster];
+}
 
-static bool fat16IsEoc(u16 entry)
+static bool _fat16IsEoc(u16 entry)
 {
    return entry >= kFat16_EocMin;
 }
 
-static bool fat16IsBad(u16 entry)
+static bool _fat16IsBadCluster(const Fat16Volume* vol, u16 cluster)
 {
-   return entry < 2 || entry == kFat16_BadCluster;
+   return cluster < 2 || cluster == kFat16_BadCluster || cluster >= vol->clusterCount;
 }
  
-static u32 fat16ClusterToLba(const Fat16Volume* vol, u16 cluster)
+static u32 _fat16ClusterToLba(const Fat16Volume* vol, u16 cluster)
 {
    return vol->dataStartLba + ((u32)(cluster - 2) * vol->sectorsPerCluster);
 }
 
-static u8 fat16ToUpper(u8 c)
+static u8 _fat16ToUpper(u8 c)
 {
    if (c >= 'a' && c <= 'z')
       return c - ('a' - 'A');
    return c;
 }
 
-static Fat16Error fat16NameTo8_3(const char* name, u8 out[kFat16_NameLen])
+static u8 _fat16ToLower(u8 c)
 {
-   for (u32 i = 0; i < kFat16_NameLen; i++)
-      out[i] = ' ';
-
-   if (name == nil || name[0] == '\0' || name[0] == kExtSep)
-      return kFatErr_BadName;
-
-   u32 i = 0;
-   u32 baseLen = 0;
-   while (name[i] != '\0' && name[i] != kExtSep) {
-      if (baseLen >= kFat16_BaseLen)
-         return kFatErr_BadName;
-      out[baseLen++] = fat16ToUpper((u8)name[i++]);
-   }
-
-   if (name[i] == '\0')
-      return kFatErr_OK;
-
-   ++i;
-   u32 extLen = 0;
-   while (name[i] != '\0') {
-      if (name[i] == kExtSep)
-         return kFatErr_BadName;
-      if (extLen >= kFat16_ExtLen)
-         return kFatErr_BadName;
-      out[kFat16_BaseLen + extLen++] = fat16ToUpper((u8)name[i++]);
-   }
-
-   return kFatErr_OK;
+   if (c >= 'A' && c <= 'Z')
+      return c + ('a' - 'A');
+   return c;
 }
 
-static bool fat16DirEntryMatches(const Fat16DirEntry* entry, const u8 name[kFat16_NameLen])
+static bool _fat16DirEntryMatches(const Fat16DirEntry* entry, const u8 name[kFat16_NameLen])
 {
    for (u32 i = 0; i < kFat16_NameLen; i++) {
-      if (entry->name[i] != (u8)name[i])
+      if (entry->name[i] != name[i])
          return false;
    }
    return true;
 }
 
-static bool fat16EntryIsTerminal(const Fat16DirEntry* e)
+static bool _fat16EntryIsTerminal(const Fat16DirEntry* e)
 {
    return e->name[0] == kFat16_DirEntryEnd;
 }
 
-static bool fat16EntryIsSkippable(const Fat16DirEntry* entry)
+static bool _fat16EntryIsSkippable(const Fat16DirEntry* entry)
 {
    if (entry->name[0] == kFat16_DirEntryFree)
       return true;
@@ -139,27 +94,44 @@ static bool fat16EntryIsSkippable(const Fat16DirEntry* entry)
    return false;
 }
 
-static Fat16Error fat16ScanDirEntries(const Fat16DirEntry* entries, u32 count, const u8 name8_3[kFat16_NameLen], Fat16DirEntry *out)
+static Fat16Error _fat16ReadDirSector(const Fat16Volume* vol, u16 cluster, u16 offset, u8* dst)
 {
-   for (u32 i = 0; i < count; i++) {
-      const Fat16DirEntry* e = &entries[i];
-      if (fat16EntryIsTerminal(e))
-         return kFatErr_FileNotFound;
-      if (fat16EntryIsSkippable(e))
-         continue;
-      if (fat16DirEntryMatches(e, name8_3)) {
-         *out = *e;
-         return kFatErr_OK;
-      }
-   }
+   if (_fat16IsEoc(cluster))
+      return kFatErr_BadCluster;
+   
+   if (_fat16IsBadCluster(vol, cluster))
+      return kFatErr_BadCluster;
 
-   return kFatErr_Continue;
+   u32 lba = _fat16ClusterToLba(vol, cluster);
+   if (!vol->readSectors(lba + offset, 1, dst))
+      return kFatErr_DiskRead;
+   
+   return kFatErr_OK;
 }
 
-Fat16Error fat16Mount(Fat16Volume* vol, kFat16ReadSectorsFn fncReadSectors, 
+static Fat16Error _fat16SkipToNextValidEntry(const Fat16Volume* vol, Fat16DirIterator* iter)
+{
+   const Fat16DirEntry* entry = fat16DirIterEntry(iter);
+   while (_fat16EntryIsSkippable(entry)) {
+      Fat16Error err = fat16DirIterNext(vol, iter);
+      if (err != kFatErr_OK)
+         return err;
+
+      entry = fat16DirIterEntry(iter);
+   }
+   
+   if (_fat16EntryIsTerminal(entry))
+      return kFatErr_EndOfDir;
+
+   return kFatErr_OK;
+}
+
+Fat16Error fat16Mount(Fat16Volume* vol, Fat16ReadSectorsFn fncReadSectors, 
                       void* fatBuffer, u32 fatBufferSize, 
                       void* rootDirBuffer, u32 rootDirBufferSize)
 {
+   vol->mounted = false;
+
    u8 sector[kFat16_BytesPerSector];
    if (!fncReadSectors(0, 1, sector))
       return kFatErr_DiskRead;
@@ -179,14 +151,19 @@ Fat16Error fat16Mount(Fat16Volume* vol, kFat16ReadSectorsFn fncReadSectors,
       return kFatErr_BadBPB;
    if (bpb->fatSize16 == 0)
       return kFatErr_BadBPB;
+   if (bpb->jmpBoot[0] != 0xEB && bpb->jmpBoot[0] != 0xE9)
+      return kFatErr_BadBPB;
+   if (bpb->media < 0xF0)
+      return kFatErr_BadBPB;
    
-   u32 fatBytes      = (u32)bpb->fatSize16 * bpb->bytesPerSector;
-   u32 rootDirBytes  = (u32)bpb->rootEntCount * kFat16_DirEntrySize;
+   u32 fatBytes       = (u32)bpb->fatSize16 * bpb->bytesPerSector;
+   u32 rootDirBytes   = (u32)bpb->rootEntCount * kFat16_DirEntrySize;
+   u32 rootDirSectors = (rootDirBytes + bpb->bytesPerSector - 1) / bpb->bytesPerSector;
    if (fatBytes > fatBufferSize)
       return kFatErr_FatOverflow;
-   if (rootDirBytes > rootDirBufferSize)
+   if (rootDirSectors * bpb->bytesPerSector > rootDirBufferSize)
       return kFatErr_RootOverflow;
-
+      
    vol->readSectors        = fncReadSectors;
    vol->bytesPerSector     = bpb->bytesPerSector;
    vol->sectorsPerCluster  = bpb->sectorsPerCluster;
@@ -195,9 +172,15 @@ Fat16Error fat16Mount(Fat16Volume* vol, kFat16ReadSectorsFn fncReadSectors,
    vol->fatStartLba        = bpb->reservedSectorCount;
    vol->rootDirStartLba    = vol->fatStartLba + (u32)bpb->numFats * bpb->fatSize16;
 
-   u32 rootDirSectors   = (rootDirBytes + bpb->bytesPerSector - 1) / bpb->bytesPerSector;
    vol->dataStartLba    = vol->rootDirStartLba + rootDirSectors;
    vol->bytesPerCluster = (u32)bpb->sectorsPerCluster * bpb->bytesPerSector;
+
+   u32 totSec = bpb->totSec16 ? bpb->totSec16 : bpb->totSec32;
+   if (totSec == 0)
+      return kFatErr_BadBPB;
+   if (totSec <= vol->dataStartLba)
+      return kFatErr_BadBPB;
+   vol->clusterCount    = (totSec - vol->dataStartLba) / vol->sectorsPerCluster + 2;
 
    vol->fat     = (u16*)fatBuffer;
    vol->rootDir = (u8*)rootDirBuffer;
@@ -207,42 +190,102 @@ Fat16Error fat16Mount(Fat16Volume* vol, kFat16ReadSectorsFn fncReadSectors,
    if (!fncReadSectors(vol->rootDirStartLba, rootDirSectors, vol->rootDir))
       return kFatErr_DiskRead;
 
+   vol->mounted = true;
    return kFatErr_OK;
 }
 
-Fat16Error fat16FindInDir(const Fat16Volume* vol, Fat16DirRef dir, u8 name8_3[kFat16_NameLen], Fat16DirEntry* out)
+Fat16Error fat16DirIterInit(const Fat16Volume* vol, Fat16DirRef dir, u8* scratch, Fat16DirIterator* out)
 {
-   if (dir.isRoot) {
-      return fat16ScanDirEntries((const Fat16DirEntry*)vol->rootDir, vol->rootEntCount, name8_3, out);
+   out->isRoot = dir.isRoot;
+   out->entryIndex     = 0;
+   out->hopCount       = 0;
+   out->clusterOffset  = 0;
+   out->scratch        = scratch;
+   if (out->isRoot) {
+      out->base           = (const Fat16DirEntry*)vol->rootDir;
+      out->count          = vol->rootEntCount;
+      out->maxHops        = 0;
+      out->cluster        = 0;
+   } else {
+      if (_fat16IsEoc(dir.startCluster))
+         return kFatErr_EndOfDir;
+      
+      out->cluster = dir.startCluster;
+      out->count   = vol->bytesPerSector / kFat16_DirEntrySize;
+      out->maxHops = vol->clusterCount;
+      out->base    = (const Fat16DirEntry*)out->scratch;
+      
+      Fat16Error err = _fat16ReadDirSector(vol, dir.startCluster, 0, out->scratch);
+      if (err != kFatErr_OK)
+         return err;
    }
+   
+   return _fat16SkipToNextValidEntry(vol, out);
+}
 
-   u8  scratch[kFat16_BytesPerSector];
-   u32 entriesPerSector = vol->bytesPerSector / kFat16_DirEntrySize;
-   u32 maxHops          = ((u32)vol->fatSize16 * vol->bytesPerSector) / 2;
+Fat16Error fat16DirIterNext(const Fat16Volume* vol, Fat16DirIterator* iter)
+{
+   if (++iter->entryIndex >= iter->count) {
+      if (iter->isRoot)
+         return kFatErr_EndOfDir;
 
-   u16 cluster = dir.startCluster;
-   u32 hops    = 0;
-   while (!fat16IsEoc(cluster)) {
-      if (fat16IsBad(cluster))
-         return kFatErr_BadCluster;
+      iter->entryIndex = 0;
+      if (++iter->clusterOffset >= vol->sectorsPerCluster) {
+         if (++iter->hopCount > iter->maxHops)
+            return kFatErr_BadCluster;
 
-      u32 baseLba = fat16ClusterToLba(vol, cluster);
-      for (u32 s = 0; s < vol->sectorsPerCluster; s++) {
-         if (!vol->readSectors(baseLba + s, 1, scratch))
-            return kFatErr_DiskRead;
+         u16 next = _fat16FatEntry(vol, iter->cluster);
+         if (_fat16IsEoc(next))
+            return kFatErr_EndOfDir;
+         if (_fat16IsBadCluster(vol, next))
+            return kFatErr_BadCluster;
 
-         Fat16Error err = fat16ScanDirEntries((const Fat16DirEntry*)scratch, entriesPerSector, name8_3, out);
-         if (err != kFatErr_Continue)
-            return err;
+         iter->cluster       = next;
+         iter->clusterOffset = 0;
       }
 
-      if (++hops > maxHops)
-         return kFatErr_BadCluster;
-         
-      cluster = vol->fat[cluster];
+      Fat16Error err = _fat16ReadDirSector(vol, iter->cluster, iter->clusterOffset, iter->scratch);
+      if (err != kFatErr_OK)
+         return err;
    }
 
-   return kFatErr_FileNotFound;
+   return _fat16SkipToNextValidEntry(vol, iter);
+}
+
+const Fat16DirEntry* fat16DirIterEntry(const Fat16DirIterator* iter)
+{
+   if(iter->entryIndex >= iter->count)
+      return nil;
+
+   return &iter->base[iter->entryIndex];
+}
+
+Fat16Error fat16FindInDir(const Fat16Volume* vol, Fat16DirRef dir, const u8 name8_3[kFat16_NameLen], Fat16DirEntry* out)
+{
+   u8 scratch[kFat16_BytesPerSector] __attribute__((aligned(8)));
+
+   Fat16DirIterator iter;
+   Fat16Error err = fat16DirIterInit(vol, dir, scratch, &iter);
+   if (err == kFatErr_OK) {
+      const Fat16DirEntry* entry;
+      while (err == kFatErr_OK) {
+         entry = fat16DirIterEntry(&iter);
+         if (entry == nil)
+            return kFatErr_EndOfDir;
+
+         if (!_fat16EntryIsSkippable(entry) && _fat16DirEntryMatches(entry, name8_3)) {
+            *out = *(entry);
+            return kFatErr_OK;
+         }
+
+         err = fat16DirIterNext(vol, &iter);      
+      }
+   }
+
+   if (err == kFatErr_EndOfDir)
+      return kFatErr_FileNotFound;
+
+   return err;
 }
 
 // parse filepath, split on kPathSep ('/') ... look for dirs, then file
@@ -302,71 +345,24 @@ Fat16Error fat16FindFile(const Fat16Volume* vol, const char* path, u16* outFirst
    return kFatErr_OK;
 }
 
-Fat16Error fat16ReadFile(const Fat16Volume* vol, u16 firstCluster, u32 fileSize, void* dest)
+Fat16Error fat16ReadFileRange(const Fat16Volume* vol, u16 firstCluster, u32 fileSize, u32 offset, u32 len, void* dest, u32* outBytesRead)
 {
-   if (fileSize == 0)
-      return kFatErr_OK;
-   if (fat16IsBad(firstCluster))
-      return kFatErr_BadCluster;
-
-   u8 scratch[kFat16_BytesPerSector];
-   u8* out       = (u8*)dest;
-   u16 cluster   = firstCluster;
-   u32 remaining = fileSize;
-   while (remaining > 0) {
-      if (fat16IsBad(cluster))
-         return kFatErr_BadCluster;
-
-      u32 baseLba       = fat16ClusterToLba(vol, cluster);
-      u32 clusterBytes  = min(remaining, vol->bytesPerCluster);
-      u32 fullSectors   = clusterBytes / vol->bytesPerSector;
-      u32 tail          = clusterBytes % vol->bytesPerSector;
-
-      if (fullSectors > 0) {
-         if (!vol->readSectors(baseLba, fullSectors, out))
-            return kFatErr_DiskRead;   
-
-         out += fullSectors * vol->bytesPerSector;
-      }
-
-      if (tail > 0) {
-         if (!vol->readSectors(baseLba + fullSectors, 1, scratch))
-            return kFatErr_DiskRead;
-         memcpy(out, scratch, tail);
-         out += tail;
-      }
-      
-      remaining -= clusterBytes;
-
-      u16 next = vol->fat[cluster];
-      if (fat16IsEoc(next)) {
-         if (remaining > 0)
-            return kFatErr_ShortRead;
-
-         return kFatErr_OK;
-      }
-
-      cluster = next;
-   }
-
-   return kFatErr_OK;
-}
-
-Fat16Error fat16ReadFileRange(const Fat16Volume* vol, u16 firstCluster, u32 fileSize, u32 offset, u32 len, void* dest)
-{
+   *outBytesRead = 0;
    if (offset >= fileSize || len == 0)
       return kFatErr_OK;
    if (len > fileSize - offset)
       len = fileSize - offset;
-   if (fat16IsBad(firstCluster))
+   if (_fat16IsBadCluster(vol, firstCluster))
       return kFatErr_BadCluster;
 
    u16 cluster = firstCluster;
    u32 skip    = offset / vol->bytesPerCluster;
    for (u32 h = 0; h < skip; h++) {
-      u16 next = vol->fat[cluster];
-      if (fat16IsEoc(next) || fat16IsBad(next))
+      u16 next = _fat16FatEntry(vol, cluster);
+      if (_fat16IsEoc(next))
          return kFatErr_ShortRead;
+      if (_fat16IsBadCluster(vol, next))
+         return kFatErr_BadCluster;
 
       cluster = next;
    }
@@ -377,33 +373,111 @@ Fat16Error fat16ReadFileRange(const Fat16Volume* vol, u16 firstCluster, u32 file
    u32 remaining = len;
 
    while (remaining > 0) {
-      if (fat16IsBad(cluster))
+      if (_fat16IsBadCluster(vol, cluster))
          return kFatErr_BadCluster;
 
-      u32 sectorInClus = (pos % vol->bytesPerCluster) / vol->bytesPerSector;
-      u32 offInSector  = pos % vol->bytesPerSector;
-      u32 lba          = fat16ClusterToLba(vol, cluster) + sectorInClus;
-      u32 chunk        = min(remaining, vol->bytesPerSector - offInSector);
+      u32 posInCluster = pos % vol->bytesPerCluster;
+      u32 clusterBytes = min(remaining, vol->bytesPerCluster - posInCluster);
+      u32 lba          = _fat16ClusterToLba(vol, cluster) + (posInCluster / vol->bytesPerSector);
+      u32 offInSector  = posInCluster % vol->bytesPerSector;
+      u32 done         = 0;
 
-      if (offInSector == 0 && chunk == vol->bytesPerSector) {
-         if (!vol->readSectors(lba, 1, out))
-            return kFatErr_DiskRead;
-      } else {
+      if (offInSector > 0) {
+         u32 head = min(clusterBytes, vol->bytesPerSector - offInSector);
          if (!vol->readSectors(lba, 1, scratch))
             return kFatErr_DiskRead;
-         memcpy(out, scratch + offInSector, chunk);
+
+         memcpy(out, scratch + offInSector, head);
+         done          += head;
+         *outBytesRead += head;
+         lba++;
       }
 
-      out       += chunk;
-      pos       += chunk;
-      remaining -= chunk;
+      u32 fullSectors = (clusterBytes - done) / vol->bytesPerSector;
+      if (fullSectors > 0) {
+         if (!vol->readSectors(lba, fullSectors, out + done))
+            return kFatErr_DiskRead;
+
+         done          += fullSectors * vol->bytesPerSector;
+         lba           += fullSectors;
+         *outBytesRead += fullSectors * vol->bytesPerSector;
+      }
+
+      u32 tail = clusterBytes - done;
+      if (tail > 0) {
+         if (!vol->readSectors(lba, 1, scratch))
+            return kFatErr_DiskRead;
+
+         memcpy(out + done, scratch, tail);
+         done          += tail;
+         *outBytesRead += tail;
+      }
+
+      out       += done;
+      pos       += done;
+      remaining -= done;
 
       if (remaining > 0 && (pos % vol->bytesPerCluster) == 0) {
-         u16 next = vol->fat[cluster];
-         if (fat16IsEoc(next))
+         u16 next = _fat16FatEntry(vol, cluster);
+         if (_fat16IsEoc(next))
             return kFatErr_ShortRead;
+         if (_fat16IsBadCluster(vol, next))
+            return kFatErr_BadCluster;
          cluster = next;
       }
+   }
+
+   return kFatErr_OK;
+}
+
+Fat16Error fat168_3ToName(u8 str8_3[kFat16_NameLen], char outName[kFat16_MaxComponentLen])
+{
+   if (str8_3[0] == ' ')
+      return kFatErr_BadName;
+
+   u32 idx = 0;
+   for (u32 i = 0; i < kFat16_BaseLen && str8_3[i] != ' '; i++) {
+      outName[idx++] = _fat16ToLower(str8_3[i]);
+   }
+
+   char c = str8_3[kFat16_BaseLen];
+   if (c != '\0' && c != ' ')
+      outName[idx++] = '.';
+
+   for (u32 i = kFat16_BaseLen; i < kFat16_NameLen && str8_3[i] != ' '; i++) {
+      outName[idx++] = _fat16ToLower(str8_3[i]);
+   }
+   outName[idx] = '\0';
+   return kFatErr_OK;
+}
+
+Fat16Error fat16NameTo8_3(const char* name, u8 out[kFat16_NameLen])
+{
+   for (u32 i = 0; i < kFat16_NameLen; i++)
+      out[i] = ' ';
+
+   if (name == nil || name[0] == '\0' || name[0] == kExtSep)
+      return kFatErr_BadName;
+
+   u32 i = 0;
+   u32 baseLen = 0;
+   while (name[i] != '\0' && name[i] != kExtSep) {
+      if (baseLen >= kFat16_BaseLen)
+         return kFatErr_BadName;
+      out[baseLen++] = _fat16ToUpper((u8)name[i++]);
+   }
+
+   if (name[i] == '\0')
+      return kFatErr_OK;
+
+   ++i;
+   u32 extLen = 0;
+   while (name[i] != '\0') {
+      if (name[i] == kExtSep)
+         return kFatErr_BadName;
+      if (extLen >= kFat16_ExtLen)
+         return kFatErr_BadName;
+      out[kFat16_BaseLen + extLen++] = _fat16ToUpper((u8)name[i++]);
    }
 
    return kFatErr_OK;
@@ -431,8 +505,9 @@ void fat16SelfTest(const Fat16Volume* vol)
 
    serialPrintf("[FAT16] found: firstCluster=%x size=%x bytes\n", cluster, size);
 
-   u32 toRead = min(size, (u32)(kFat16_SelfTestBufSize - 1));
-   err = fat16ReadFileRange(vol, cluster, size, 0, toRead, buffer);
+   u32 toRead    = min(size, (u32)(kFat16_SelfTestBufSize - 1));
+   u32 bytesRead = 0;
+   err = fat16ReadFileRange(vol, cluster, size, 0, toRead, buffer, &bytesRead);
    if (err != kFatErr_OK) {
       serialPrintf("[FAT16] selftest: FAIL - fat16ReadFileRange returned %x\n", err);
       return;

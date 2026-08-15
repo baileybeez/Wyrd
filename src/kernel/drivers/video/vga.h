@@ -34,6 +34,7 @@ typedef struct {
 } VGA;
 
 void vgaInit(void);
+void vgaClear(void);
 void vgaSetColor(u8 fg, u8 bg);
 void putChar(char cb);
 void print(const char * s);
