@@ -7,6 +7,7 @@
 #include "lib/logger.h"
 #include "lib/mem.h"
 #include "lib/panic.h"
+#include "string.h"
 
 #define kThreadStackSize 16384
 #define kInitialEflags   0x202
@@ -23,6 +24,14 @@ static Thread* _threadRegistry = nil;
 static volatile u32 _nextThreadId = 0;
 static inline u32 getThreadId() { return atomicFetchAdd(&_nextThreadId, 1); }
 
+static const char* kThreadStateNames[] = {
+   [kThreadState_Ready]   = "ready",
+   [kThreadState_Running] = "run",
+   [kThreadState_Blocked] = "block",
+   [kThreadState_Zombie]  = "zombie",
+   [kThreadState_Reaped]  = "reaped"
+};
+
 static void _threadExit()
 {
    kernelPanic("thread returned from its entry function!");
@@ -34,7 +43,7 @@ static void _threadPushRegistry(Thread* t)
    _threadRegistry = t;
 }
 
-static Thread* _threadAlloc()
+static Thread* _threadAlloc(const char* name)
 {
    Thread* t = kmalloc(sizeof(Thread));
    if (t == nil)
@@ -45,6 +54,8 @@ static Thread* _threadAlloc()
    t->state     = kThreadState_Ready;
    t->space     = pagingBootSpace();
    t->detached  = true;
+   strncpy(t->threadName, name, kMaxThreadNameLen);
+   t->threadName[kMaxThreadNameLen - 1] = '\0';
    
    u32 flags = irqSave();
    _threadPushRegistry(t);
@@ -63,7 +74,7 @@ static void _threadFree(Thread* t)
 
 Thread* threadBootstrap()
 {
-   Thread* t = _threadAlloc();
+   Thread* t = _threadAlloc("bootstrap");
    
    t->state     = kThreadState_Running;
    t->stackBase = (u32)stack_bottom;
@@ -74,9 +85,9 @@ Thread* threadBootstrap()
    return t;
 }
 
-Thread* threadCreate(ThreadEntry entry)
+Thread* threadCreate(ThreadEntry entry, const char* name)
 {
-   Thread* t = _threadAlloc();
+   Thread* t = _threadAlloc(name);
 
    u8* stack = kmalloc(kThreadStackSize);
    if (stack == nil) {
@@ -113,9 +124,9 @@ Thread* threadCreate(ThreadEntry entry)
    return t;
 }
 
-Thread* threadCreateUser(u32 entry, u32 userStackTop, AddressSpace* space)
+Thread* threadCreateUser(u32 entry, const char* name, u32 userStackTop, AddressSpace* space)
 {
-   Thread* t = _threadAlloc();
+   Thread* t = _threadAlloc(name);
 
    u8* stack = kmalloc(kThreadStackSize);
    if (stack == nil) {
@@ -232,4 +243,34 @@ void threadUnregister(Thread* t)
    }
 
    kernelPanic("threadUnregister: thread %u not registered", t->id);
+}
+
+u32 threadRegistrySnapshot(ProcessInfo* info, u32 capacity)
+{
+   u32 flags = irqSave();
+
+   u32 count = 0;
+   Thread* t = _threadRegistry;
+   while (t != nil && count < capacity) {
+      ProcessInfo* pi = &info[count++];
+      pi->id       = t->id;
+      pi->parentId = t->parentId;
+      pi->exitCode = t->exitCode;
+      pi->state    = t->state;
+      strncpy(pi->name, t->threadName, kMaxThreadNameLen);
+      pi->name[kMaxThreadNameLen - 1] = '\0';
+      
+      t = t->registryNext;
+   }
+
+   irqRestore(flags);
+   return count;
+}
+
+const char* threadStateName(ThreadState state)
+{
+   if (state > kThreadState_Reaped)
+      return "?";
+
+   return kThreadStateNames[state];
 }

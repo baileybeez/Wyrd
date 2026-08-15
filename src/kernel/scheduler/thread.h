@@ -3,6 +3,9 @@
 #include "sys.h"
 #include "arch/i686/paging.h"
 
+#define kMaxThreads        64
+#define kMaxThreadNameLen  32
+
 typedef enum {
    kThreadState_Ready,
    kThreadState_Running,
@@ -28,6 +31,7 @@ typedef void (*ThreadEntry)(void);
 typedef struct Thread {
    u32            id;
    u32            parentId;
+   char           threadName[kMaxThreadNameLen];
    ThreadState    state;
    u32            savedEsp;
    u32            stackBase;
@@ -42,9 +46,19 @@ typedef struct Thread {
    struct Thread* next;
 } Thread;
 
-Thread*   threadBootstrap();
-Thread*   threadCreate(ThreadEntry entry);
-Thread*   threadCreateUser(u32 entry, u32 userStackTop, AddressSpace* space);
-WaitError threadWait(u32 id, i32* outCode);
-Thread*   threadFind(u32 id);
-void      threadUnregister(Thread* t);
+typedef struct {
+   u32  id;
+   u32  parentId;
+   char name[kMaxThreadNameLen];
+   i32  exitCode;
+   ThreadState state;
+} ProcessInfo;
+
+Thread*     threadBootstrap();
+Thread*     threadCreate(ThreadEntry entry, const char* name);
+Thread*     threadCreateUser(u32 entry, const char* name, u32 userStackTop, AddressSpace* space);
+WaitError   threadWait(u32 id, i32* outCode);
+Thread*     threadFind(u32 id);
+void        threadUnregister(Thread* t);
+u32         threadRegistrySnapshot(ProcessInfo* info, u32 capacity);
+const char* threadStateName(ThreadState state);

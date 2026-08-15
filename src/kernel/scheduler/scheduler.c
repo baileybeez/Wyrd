@@ -213,8 +213,8 @@ void schedulerInit()
 {
    _current = threadBootstrap();
    _tail    = nil;
-   _idle    = threadCreate(_schedulerIdle);
-   _reaper  = threadCreate(_reaperThread);
+   _idle    = threadCreate(_schedulerIdle, "system-idle");
+   _reaper  = threadCreate(_reaperThread, "reaper");
 }
 
 u32 schedulerIdleCount()
