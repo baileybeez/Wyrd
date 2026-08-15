@@ -44,6 +44,8 @@ C_SRCS   := main.c \
 			mm/heap.c \
 			mm/usercopy.c \
 			fs/fat16/fat16.c \
+			fs/vfs/fat16backend.c \
+			fs/vfs/vfs.c \
 			scheduler/thread.c \
 			scheduler/scheduler.c \
 			loader/elfSelfTest.c \
@@ -54,7 +56,6 @@ C_SRCS   := main.c \
 C_OBJS   := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SRCS))
 ASM_OBJS := $(patsubst %.asm,$(OBJ_DIR)/%.o,$(ASM_SRCS))
 OBJS     := $(ASM_OBJS) $(C_OBJS)
-DEPS     := $(C_OBJS:.o=.d)
 DEPS 	 := $(OBJS:.o=.d)
 LINKER_SCRIPT := $(KERNEL_SRC_DIR)/linker.ld
 
@@ -62,11 +63,13 @@ LINKER_SCRIPT := $(KERNEL_SRC_DIR)/linker.ld
 # 	kIncludeSelfTests 	:: include all diagnostic / debug tests (i.e. ATA, FAT16, ELFLOAD)
 # 	kSerialTrace		:: includes support for debug console via serial (QEMU)
 FEATURES := -DkSerialTrace
-CFLAGS   := $(TARGET_CFLAGS) $(FEATURES) -I$(KERNEL_SRC_DIR) -I$(COMMON_SRC_DIR) -MMD -MP
-CFLAGS   += -g3 -gdwarf-4 -O0 -fno-omit-frame-pointer -fno-pic -fno-pie
+INCLUDES := -I$(KERNEL_SRC_DIR) -I$(COMMON_SRC_DIR) -I$(SRC_DIR)/libs/libwyrd/include
+CFLAGS   := $(TARGET_CFLAGS) $(FEATURES) $(INCLUDES) -MMD -MP
+CFLAGS   += -g3 -gdwarf-4 -O0 -fno-omit-frame-pointer -fno-pic -fno-pie 
+CFLAGS   += -fstack-usage -Wstack-usage=4096
 
 LDFLAGS  := -T $(LINKER_SCRIPT) -nostdlib
-LIBS     := -lgcc
+LIBS     := $(BUILD_DIR)/libs/libwyrd.a -lgcc
 
 KERNEL_ELF := $(KERNEL_BUILD)/kernel.elf
 KERNEL_BIN := $(KERNEL_BUILD)/kernel.bin
@@ -83,7 +86,7 @@ $(KERNEL_BIN): $(KERNEL_ELF)
 
 $(KERNEL_ELF): $(FLAG_CACHE) $(OBJS) $(LINKER_SCRIPT) 
 	@mkdir -p $(dir $@)
-	$(TARGET_LD) $(LDFLAGS) -o $@ $(OBJS)  $(LIBS)
+	$(TARGET_LD) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 $(OBJ_DIR)/%.o: $(KERNEL_SRC_DIR)/%.c $(FLAG_CACHE)
 	@mkdir -p $(dir $@)
