@@ -81,7 +81,7 @@ static void _lifecycleTierOne()
    for (u32 i = 0; i < kLifecycleIterations; i++) {
       _quickCode = (i32)i;
  
-      Thread* t = threadCreate(_quickExitThread);
+      Thread* t = threadCreate(_quickExitThread, "quick-exit");
       if (t == nil) {
          kError("[lifecycle] tier 1: threadCreate failed at %u", i);
          return;
@@ -213,7 +213,7 @@ static void _lifecycleErrorReturns()
    if (err != kWaitErr_Self)
       kError("[lifecycle] tier 3c: self returned %u, expected Self", err);
  
-   Thread* detached = threadCreate(_quickExitThread);
+   Thread* detached = threadCreate(_quickExitThread, "quick-exit");
    if (detached != nil) {
       u32 id = detached->id;
       err = threadWait(id, &code);

@@ -4,14 +4,19 @@
 
 static const char kHexLower[] = "0123456789abcdef";
 
-static void emitString(CharSink sink, const char* s)
+static void emitString(CharSink sink, const char* s, u32 minWidth, char padChar)
 {
    if (s == 0)
       s = "(null)";
 
+   u32 n = 0;
    while(*s) { 
       sink(*s++);
+      n++;
    }
+
+   while (n++ < minWidth)
+      sink(padChar);
 }
 
 // we divide out a string into an array based on the 'base' passed in, 
@@ -39,13 +44,13 @@ static void emitUnsigned(CharSink sink, u64 u, u32 base, u32 minWidth, char padC
       sink(buf[--len]);
 }
 
-static void emitSigned(CharSink sink, i32 i)
+static void emitSigned(CharSink sink, i32 i, u32 minWidth, char padChar)
 {
    if (i < 0) {
       sink('-');
-      emitUnsigned(sink, (u32)-i, 10, 0, ' ');
+      emitUnsigned(sink, (u32)-i, 10, minWidth, padChar);
    } else {
-      emitUnsigned(sink, (u32)i, 10, 0, ' ');
+      emitUnsigned(sink, (u32)i, 10, minWidth, padChar);
    }
 }
 
@@ -78,23 +83,23 @@ void kvPrintf(CharSink sink, const char* fmt, va_list args)
          }
          case 's': {
             const char* s = va_arg(args, const char*);
-            emitString(sink, s);
+            emitString(sink, s, width, padChar);
             break;
          }
          case 'd':
          case 'i': {
             i32 v = va_arg(args, i32);
-            emitSigned(sink, v);
+            emitSigned(sink, v, width, padChar);
             break;
          }
          case 'u': {
             u32 v = va_arg(args, u32);
-            emitUnsigned(sink, (u64)v, 10, 0, padChar);
+            emitUnsigned(sink, (u64)v, 10, width, padChar);
             break;
          }
          case 'l': {
             u64 v = va_arg(args, u64);
-            emitUnsigned(sink, v, 10, 0, padChar);
+            emitUnsigned(sink, v, 10, width, padChar);
             break;
          }
          case 'x': {

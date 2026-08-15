@@ -133,7 +133,7 @@ Thread* execFromDisk(const Fat16Volume* vol, const char* path, ElfError* outErro
       return nil;
    }
    
-   Thread* thread = threadCreateUser(entryPoint, stackTop, space);
+   Thread* thread = threadCreateUser(entryPoint, "todo: elf name", stackTop, space);
    if (thread == nil) {
       addressSpaceDestroy(space);
       return nil;
