@@ -3,9 +3,14 @@
 
 #define kMaxNameLength        12
 #define kNameBufferSize       (kMaxNameLength + 1)
+#define kMaxPathComponents    32
+#define kMaxPath              256
 #define kVfsSectorSize        512
 #define kVfsPrivateDirSize    640
 #define kVfsPrivateFileSize   32
+
+#define kPathSep  '/'
+#define kRootDir  "/"
 
 typedef enum {
    kVfsErr_OK              = 0,
@@ -66,3 +71,5 @@ VfsError vfsInit(const VfsBackend* mode);
 VfsError vfsDirOpen(const char* path, Dir* outDir);
 VfsError vfsDirRead(Dir* entry, DirEntry* outEntry);
 VfsError vfsDirClose(Dir* entry);
+bool     vfsResolvePath(const char* cwd, const char* path, char* out, u32 outSize);
+bool     vfsIsDirectory(const char* path);

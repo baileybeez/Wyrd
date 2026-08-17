@@ -2,8 +2,8 @@
 #include "fat16.h"
 #include "lib/mem.h"
 
-#define kExtSep   '.'
-#define kPathSep  '/'
+#define kFatExtSep  '.'
+#define kFatPathSep '/'
 
 #define kFat16_BootSignature   0xAA55
 #define kFat16_MaxFatSectors   128
@@ -288,14 +288,14 @@ Fat16Error fat16FindInDir(const Fat16Volume* vol, Fat16DirRef dir, const u8 name
    return err;
 }
 
-// parse filepath, split on kPathSep ('/') ... look for dirs, then file
+// parse filepath, split on kFatPathSep ('/') ... look for dirs, then file
 Fat16Error fat16FindFile(const Fat16Volume* vol, const char* path, u16* outFirstCluster, u32* outFileSize)
 {
    if (path == nil)
       return kFatErr_BadName;
 
    const char* p = path;
-   if (*p == kPathSep)
+   if (*p == kFatPathSep)
       p++;
 
    Fat16DirRef dir = { .isRoot = true, .startCluster = 0 };
@@ -305,7 +305,7 @@ Fat16Error fat16FindFile(const Fat16Volume* vol, const char* path, u16* outFirst
    while (*p != '\0') {
       char comp[kFat16_MaxComponentLen];
       u32 n = 0;
-      while (*p != '\0' && *p != kPathSep) {
+      while (*p != '\0' && *p != kFatPathSep) {
          if (n + 1 >= kFat16_MaxComponentLen)
             return kFatErr_BadName;
 
@@ -315,7 +315,7 @@ Fat16Error fat16FindFile(const Fat16Volume* vol, const char* path, u16* outFirst
       if (n == 0)
          return kFatErr_BadName;
 
-      if (*p == kPathSep)
+      if (*p == kFatPathSep)
          p++;
 
       u8 name8_3[kFat16_NameLen];
@@ -442,7 +442,7 @@ Fat16Error fat168_3ToName(u8 str8_3[kFat16_NameLen], char outName[kFat16_MaxComp
 
    char c = str8_3[kFat16_BaseLen];
    if (c != '\0' && c != ' ')
-      outName[idx++] = '.';
+      outName[idx++] = kFatExtSep;
 
    for (u32 i = kFat16_BaseLen; i < kFat16_NameLen && str8_3[i] != ' '; i++) {
       outName[idx++] = _fat16ToLower(str8_3[i]);
@@ -456,12 +456,12 @@ Fat16Error fat16NameTo8_3(const char* name, u8 out[kFat16_NameLen])
    for (u32 i = 0; i < kFat16_NameLen; i++)
       out[i] = ' ';
 
-   if (name == nil || name[0] == '\0' || name[0] == kExtSep)
+   if (name == nil || name[0] == '\0' || name[0] == kFatExtSep)
       return kFatErr_BadName;
 
    u32 i = 0;
    u32 baseLen = 0;
-   while (name[i] != '\0' && name[i] != kExtSep) {
+   while (name[i] != '\0' && name[i] != kFatExtSep) {
       if (baseLen >= kFat16_BaseLen)
          return kFatErr_BadName;
       out[baseLen++] = _fat16ToUpper((u8)name[i++]);
@@ -473,7 +473,7 @@ Fat16Error fat16NameTo8_3(const char* name, u8 out[kFat16_NameLen])
    ++i;
    u32 extLen = 0;
    while (name[i] != '\0') {
-      if (name[i] == kExtSep)
+      if (name[i] == kFatExtSep)
          return kFatErr_BadName;
       if (extLen >= kFat16_ExtLen)
          return kFatErr_BadName;
