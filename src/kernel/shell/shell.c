@@ -66,20 +66,6 @@ static i32 _shellCmd_ls(u32 argc, char** argv)
    return 0;
 }
 
-static void _shellCwdPop(void)
-{
-   u32 len = strlen(_cwd);
-   if (len <= 1) {
-      return;
-   }
-
-   u32 i = len - 1;
-   while (i > 0 && _cwd[i - 1] != '/') {
-      i--;
-   }
-   _cwd[i] = '\0';
-}
-
 static i32 _shellCmd_pwd(u32 argc, char** argv)
 {
    printf(_cwd);
@@ -184,10 +170,27 @@ static i32 _shellCmd_cat(u32 argc, char** argv)
       return 1;
    }
 
-   // fd = openFile(tmp);
-   // read = readFile(fd, buff, len);
-   // print buff to output
-   // loop until file read completely
+   File file = {0};
+   VfsError err = vfsFileOpen(tmp, &file);
+   if (err != kVfsErr_OK) {
+      printf("unable to open file");
+      return 2;
+   }
+
+   u8 scratch[256];
+   u32 read = 0;
+   err = vfsFileRead(&file, scratch, 256, &read);
+   while (err == kVfsErr_OK && read > 0) {
+      for (u32 i = 0; i < read; i++)
+         putChar((char)scratch[i]);
+         
+      err = vfsFileRead(&file, scratch, 256, &read);
+   }
+   err = vfsFileClose(&file);
+   if (err == kVfsErr_OK)
+      return 0;
+
+   return 3;
 }
 
 static const ShellBuiltin kShellCommands[kShellCmd_Count] =
