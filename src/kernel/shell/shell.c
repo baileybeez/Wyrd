@@ -15,7 +15,6 @@
 
 #define kBackspace    '\b'
 
-#define kMaxPath      256
 #define kShellMaxLine 256
 #define kMaxArgs      8
 
@@ -26,8 +25,12 @@
 #define kShellCmd_ps       4
 #define kShellCmd_clear    5
 #define kShellCmd_uptime   6
+#define kShellCmd_cat      7
+#define kShellCmd_pwd      8
 
-#define kShellCmd_Count    7
+#define kShellCmd_Count    9
+
+#define kShellRootFolder   "/"
 
 typedef i32 (*ShellCmd)(u32, char**);
 
@@ -63,59 +66,33 @@ static i32 _shellCmd_ls(u32 argc, char** argv)
    return 0;
 }
 
-static void _shellCwdPop(void)
+static i32 _shellCmd_pwd(u32 argc, char** argv)
 {
-   u32 len = strlen(_cwd);
-   if (len <= 1) {
-      return;
-   }
-
-   u32 i = len - 1;
-   while (i > 0 && _cwd[i - 1] != '/') {
-      i--;
-   }
-   _cwd[i] = '\0';
+   printf(_cwd);
+   printf("\n");
+   return 0;
 }
 
 static i32 _shellCmd_cd(u32 argc, char** argv)
 {
-   if (argc == 1) {
-      printf(_cwd);
-      printf("\n");
-      return 0;
-   } 
-
-   if (strcmp(argv[1], ".") == 0) {
+   if (argc < 2) {
+      strcpy(_cwd, kShellRootFolder);
       return 0;
    }
-
-   if (strcmp(argv[1], "..") == 0) {
-      _shellCwdPop();
-      return 0;
-   }
-
-   Dir      dir   = {0};
-   DirEntry entry = {0};
-   VfsError err;
    
-   err = vfsDirOpen(_cwd, &dir);
-   if (err != kVfsErr_OK)
-      return 1;
-
-   u32 ret = 1;
-   while ((err = vfsDirRead(&dir, &entry)) == kVfsErr_OK) {
-      if (strcmp(argv[1], entry.name) == 0) {
-         strcat(_cwd, entry.name);
-         strcat(_cwd, "/");
-         ret = 0;
-         break;
-      }
-   }
-   vfsDirClose(&dir);
-   if (ret != 0)
+   char tmp[kMaxPath];
+   if (!vfsResolvePath(_cwd, argv[1], tmp, kMaxPath)) {
       printf("dir not found!");
+      return 1;
+   }
 
-   return ret;
+   if (!vfsIsDirectory(tmp)) {
+      printf("dir not found!");
+      return 2;
+   }
+
+   strcpy(_cwd, tmp);
+   return 0;
 }
 
 static const char* _sizeSuffix[5] = { "", "KB", "MB", "GB", "TB" };
@@ -180,6 +157,42 @@ static i32 _shellCmd_uptime(u32 argc, char** argv)
    return 0;
 }
 
+static i32 _shellCmd_cat(u32 argc, char** argv)
+{
+   if (argc < 2) {
+      printf("usage: cat path/to/file\n");
+      return 0;
+   }
+
+   char tmp[kMaxPath];
+   if (!vfsResolvePath(_cwd, argv[1], tmp, kMaxPath)) {
+      printf("file not found!");
+      return 1;
+   }
+
+   File file = {0};
+   VfsError err = vfsFileOpen(tmp, &file);
+   if (err != kVfsErr_OK) {
+      printf("unable to open file");
+      return 2;
+   }
+
+   u8 scratch[256];
+   u32 read = 0;
+   err = vfsFileRead(&file, scratch, 256, &read);
+   while (err == kVfsErr_OK && read > 0) {
+      for (u32 i = 0; i < read; i++)
+         putChar((char)scratch[i]);
+         
+      err = vfsFileRead(&file, scratch, 256, &read);
+   }
+   err = vfsFileClose(&file);
+   if (err == kVfsErr_OK)
+      return 0;
+
+   return 3;
+}
+
 static const ShellBuiltin kShellCommands[kShellCmd_Count] =
 {
    [kShellCmd_Invalid]     = { .name = "",         .fnc = nil },
@@ -188,7 +201,9 @@ static const ShellBuiltin kShellCommands[kShellCmd_Count] =
    [kShellCmd_meminfo]     = { .name = "meminfo",  .fnc = _shellCmd_meminfo },
    [kShellCmd_ps]          = { .name = "ps",       .fnc = _shellCmd_ps }, 
    [kShellCmd_clear]       = { .name = "clear",    .fnc = _shellCmd_clear },
-   [kShellCmd_uptime]      = { .name = "uptime",   .fnc = _shellCmd_uptime }
+   [kShellCmd_uptime]      = { .name = "uptime",   .fnc = _shellCmd_uptime },
+   [kShellCmd_cat]         = { .name = "cat",      .fnc = _shellCmd_cat },
+   [kShellCmd_pwd]         = { .name = "pwd",      .fnc = _shellCmd_pwd },
 };
 
 static void _shellEcho(char c)
@@ -319,7 +334,7 @@ static void _shellThread(void)
 bool shellInit(void)
 {
    memset(_cwd, 0x00, kMaxPath);
-   strcpy(_cwd, "/");
+   strcpy(_cwd, kShellRootFolder);
    _thread = threadCreate(_shellThread, "shell");
    return _thread != nil;
 }
