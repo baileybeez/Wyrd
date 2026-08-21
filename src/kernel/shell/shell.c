@@ -312,7 +312,7 @@ static void _shellDispatchLine(const char* line, u32 len)
          resolved = vfsResolvePath("/bin", cmdLine.buffer, tmp, kMaxPath);
 
       if (resolved) {
-         thread = execFromDisk(tmp, &err);
+         thread = execFromDisk(tmp, cmdLine.argc, cmdLine.args, &err);
          if (err != kElfErr_OK || thread == nil)
             printf("unable to launch: '%s' (%u :: 0x%x)", tmp, err, (u8*)thread);
       } else {
