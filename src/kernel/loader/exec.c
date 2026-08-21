@@ -7,7 +7,7 @@
 #include "mm/memory.h"
 #include "mm/heap.h"
 #include "mm/pmm.h"
-#include "fs/fat16/fat16.h"
+#include "fs/vfs/vfs.h"
 #include "scheduler/thread.h"
 #include "scheduler/scheduler.h"
 
@@ -21,28 +21,29 @@ static ElfError _bufferRead(const void* ctx, u32 off, u32 len, void* dst)
    return kElfErr_OK;
 }
 
-static u8* _execReadImage(const Fat16Volume* vol, const char* path, u32* outLen)
+static u8* _execReadImage(const char* path, u32* outLen)
 {
-   u16 firstCluster = 0;
-   u32 fileSize = 0;
-   Fat16Error fatErr = fat16FindFile(vol, path, &firstCluster, &fileSize);
-   if (fatErr != kFatErr_OK)
+   *outLen = 0;
+
+   File file = {0};
+   VfsError err = vfsFileOpen(path, &file);
+   if (err != kVfsErr_OK)
       return nil;
-   if (fileSize == 0)
+   if (file.size == 0)
       return nil;
 
-   u8* buffer = kmalloc(fileSize);
+   u8* buffer = kmalloc(file.size);
    if (buffer == nil)
       return nil;
 
    u32 bytesRead = 0;
-   fatErr = fat16ReadFileRange(vol, firstCluster, fileSize, 0, fileSize, (void*)buffer, &bytesRead);
-   if (fatErr != kFatErr_OK) {
+   err = vfsFileRead(&file, buffer, file.size, &bytesRead);
+   if (err != kVfsErr_OK || bytesRead != file.size) {
       kfree(buffer);
       return nil;
    }
 
-   *outLen = fileSize;
+   *outLen = bytesRead;
    return buffer;
 }
 
@@ -101,10 +102,10 @@ static bool _execMapUserStack(AddressSpace* space, u32* outStackTop)
 //       3.5. free buffer from disk image (#2)
 //    4. alloc a frame for a stack, map it into paging
 //    5. create the user thread
-Thread* execFromDisk(const Fat16Volume* vol, const char* path, ElfError* outError)
+Thread* execFromDisk(const char* path, ElfError* outError)
 {
    u32 fileSize = 0;
-   u8* buffer = _execReadImage(vol, path, &fileSize);
+   u8* buffer = _execReadImage(path, &fileSize);
    if (buffer == nil)
       return nil;
 
@@ -119,11 +120,11 @@ Thread* execFromDisk(const Fat16Volume* vol, const char* path, ElfError* outErro
    u32 entryPoint = 0;
    ElfError elfErr = elfLoad(_bufferRead, (const void*)&buf, buf.len, space, &entryPoint);   
    kfree(buffer);
+   if (outError != nil)
+         *outError = elfErr;
 
    if (elfErr != kElfErr_OK) {
       addressSpaceDestroy(space);
-      if (outError != nil)
-         *outError = elfErr;
       return nil;
    }
 
@@ -132,8 +133,20 @@ Thread* execFromDisk(const Fat16Volume* vol, const char* path, ElfError* outErro
       addressSpaceDestroy(space);
       return nil;
    }
+
+   const char* q = path;
+   if (*q == kPathSep)
+      q++;
+
+   const char* pname = q;
+   while (*q != '\0') {
+      if (*q++ == kPathSep) {
+         pname = q;
+      }
+   }
    
-   Thread* thread = threadCreateUser(entryPoint, "todo: elf name", stackTop, space);
+   kTrace("launched: %s", pname);
+   Thread* thread = threadCreateUser(entryPoint, pname, stackTop, space);
    if (thread == nil) {
       addressSpaceDestroy(space);
       return nil;

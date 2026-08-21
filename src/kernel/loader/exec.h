@@ -1,7 +1,6 @@
 #pragma once
 #include "wyrd.h"
 #include "elf.h"
-#include "fs/fat16/fat16.h"
 #include "scheduler/thread.h"
 
 typedef struct { 
@@ -9,8 +8,10 @@ typedef struct {
    u32       len; 
 } BufReader;
 
-Thread* execFromDisk(const Fat16Volume* vol, const char* path, ElfError* outError);
+Thread* execFromDisk(const char* path, ElfError* outError);
 
 #ifdef kIncludeSelfTests
+#include "fs/fat16/fat16.h"
+
 void lifecycleSelfTest(const Fat16Volume* vol, const char* path, i32 expectedCode);
 #endif
