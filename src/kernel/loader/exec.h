@@ -8,7 +8,7 @@ typedef struct {
    u32       len; 
 } BufReader;
 
-Thread* execFromDisk(const char* path, ElfError* outError);
+Thread* execFromDisk(const char* path, u32 argc, char* argv[], ElfError* outError);
 
 #ifdef kIncludeSelfTests
 #include "fs/fat16/fat16.h"
