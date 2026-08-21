@@ -7,6 +7,7 @@
 #include "fs/vfs/vfs.h"
 #include "lib/logger.h"
 #include "lib/mem.h"
+#include "loader/exec.h"
 #include "mm/heap.h"
 #include "mm/pmm.h"
 #include "scheduler/scheduler.h"
@@ -183,7 +184,7 @@ static i32 _shellCmd_cat(u32 argc, char** argv)
    while (err == kVfsErr_OK && read > 0) {
       for (u32 i = 0; i < read; i++)
          putChar((char)scratch[i]);
-         
+
       err = vfsFileRead(&file, scratch, 256, &read);
    }
    err = vfsFileClose(&file);
@@ -303,17 +304,23 @@ static void _shellDispatchLine(const char* line, u32 len)
    if (fnc != nil) {
       fnc(cmdLine.argc, cmdLine.args);
    } else {
-      // lookup elf in cwd
-      // lookup elf in 'bin' dir
-      // else -> print error msg
+      ElfError err;
+      char tmp[kMaxPath];
+      Thread* thread = nil;
+      bool resolved = vfsResolvePath(_cwd, cmdLine.buffer, tmp, kMaxPath);
+      if (!resolved)
+         resolved = vfsResolvePath("/bin", cmdLine.buffer, tmp, kMaxPath);
+
+      if (resolved) {
+         thread = execFromDisk(tmp, &err);
+         if (err != kElfErr_OK || thread == nil)
+            printf("unable to launch: '%s' (%u :: 0x%x)", tmp, err, (u8*)thread);
+      } else {
+         printf("invalid syntax or command");
+      }
+
+      printf("\n");
    } 
-   // printf("%s: ", cmdLine.cmd);
-   // for (u32 i = 0; i < cmdLine.argc; i++) {
-   //    printf(cmdLine.args[i]);
-   //    if (i + 1 < cmdLine.argc)
-   //       printf(", ");
-   // }   
-   // putChar('\n');
 }
 
 static void _shellThread(void) 
