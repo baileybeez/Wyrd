@@ -10,6 +10,9 @@
 #include "fs/vfs/vfs.h"
 #include "scheduler/thread.h"
 #include "scheduler/scheduler.h"
+#include "string.h"
+
+#define kMaxArgsLength  256
 
 static ElfError _bufferRead(const void* ctx, u32 off, u32 len, void* dst)
 {
@@ -47,18 +50,30 @@ static u8* _execReadImage(const char* path, u32* outLen)
    return buffer;
 }
 
-static u32 _execBuildUserStackFrame(u32 stackTop)
+static u32 _execBuildUserStackFrame(u32 stackTop, u32 argc, const char* blob, u32 blobLen)
 {
-   u32* sp = (u32*)stackTop;
+   u32 base = (stackTop - blobLen) & ~0x03;  // round down so the pointer array stays aligned
+   if (base - (argc + 3) * sizeof(u32) < kUserStackBase)
+      return 0;
 
-   *(--sp) = 0;      // envp[0]
-   *(--sp) = 0;      // argv[0]
-   *(--sp) = 0;      // argc
+   memcpy((void*)base, blob, blobLen);
 
+   u32* sp = (u32*)base;
+   *(--sp) = 0;
+   *(--sp) = 0;
+
+   sp -= argc;
+   u32 offset = 0;
+   for (u32 i = 0; i < argc; i++) {
+      sp[i]   = base + offset;
+      offset += strlen(blob + offset) + 1;
+   }
+
+   *(--sp) = argc;
    return (u32)sp;
 }
 
-static bool _execMapUserStack(AddressSpace* space, u32* outStackTop)
+static bool _execMapUserStack(AddressSpace* space, u32 argc, const char* blob, u32 blobLen, u32* outStackTop)
 {
    kTrace("execFromDisk: mapping %u user stack pages", kUserStackPages);
 
@@ -85,13 +100,28 @@ static bool _execMapUserStack(AddressSpace* space, u32* outStackTop)
       memset((void*)vaStack, 0x00, kPageSize);
    }
    
-   u32 userEsp = _execBuildUserStackFrame(kUserStackTop);
+   u32 userEsp = _execBuildUserStackFrame(kUserStackTop, argc, blob, blobLen);
    schedulerSwitchAddressSpace(prev);
    if (!ok)
       return false;
 
    *outStackTop = userEsp;
    return true;
+}
+
+static i32 _execFlattenArgs(char* blob, u32 max, u32 argc, const char* args[])
+{
+   u32 len = 0;
+   for (u32 i = 0; i < argc; i++) {
+      u32 n = strlen(args[i]) + 1;
+      if (len + n > max)
+         return false;
+
+      memcpy(blob + len, args[i], n);
+      len += n;
+   }
+
+   return (i32)len;
 }
 
 // Executing a file from disk
@@ -102,7 +132,7 @@ static bool _execMapUserStack(AddressSpace* space, u32* outStackTop)
 //       3.5. free buffer from disk image (#2)
 //    4. alloc a frame for a stack, map it into paging
 //    5. create the user thread
-Thread* execFromDisk(const char* path, ElfError* outError)
+Thread* execFromDisk(const char* path, u32 argc, char* argv[], ElfError* outError)
 {
    u32 fileSize = 0;
    u8* buffer = _execReadImage(path, &fileSize);
@@ -115,6 +145,14 @@ Thread* execFromDisk(const char* path, ElfError* outError)
       return nil;
    }
    
+   char blob[kMaxArgsLength];
+   i32 blobLen = _execFlattenArgs(blob, kMaxArgsLength, argc, argv);
+   if (blobLen < 0) {
+      addressSpaceDestroy(space);
+      kfree(buffer);
+      return nil;
+   }
+
    BufReader buf = { .base = buffer, .len = fileSize };
    
    u32 entryPoint = 0;
@@ -129,7 +167,7 @@ Thread* execFromDisk(const char* path, ElfError* outError)
    }
 
    u32 stackTop = 0;
-   if (!_execMapUserStack(space, &stackTop)) {
+   if (!_execMapUserStack(space, argc, blob, blobLen, &stackTop)) {
       addressSpaceDestroy(space);
       return nil;
    }
